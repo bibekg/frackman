@@ -41,7 +41,9 @@ private:
     
     
     FrackMan* m_player;
-    Dirt* m_dirt [64][64];
+    Dirt* m_dirt[64][64];
+    
+    std::vector<Actor*> m_objects;
     
 };
 

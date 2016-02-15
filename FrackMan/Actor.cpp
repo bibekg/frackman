@@ -3,9 +3,9 @@
 
 // Students:  Add code to this file (if you wish), Actor.h, StudentWorld.h, and StudentWorld.cpp
 
-// -------------------------- //
-// --------- ACTOR  --------- //
-// -------------------------- //
+// ------------------------- //
+// --------- ACTOR --------- //
+// ------------------------- //
 
 StudentWorld* Actor::getWorld() {
     return m_studentWorld;
@@ -16,7 +16,7 @@ StudentWorld* Actor::getWorld() {
 // ---------------------------- //
 
 void FrackMan::doSomething() {
-    if (m_health == 0) return;  // FrackMan is dead!
+    if (health() == 0) return;  // FrackMan is dead!
     
     // Check if overlapping dirt
     StudentWorld* world = getWorld();
@@ -71,4 +71,61 @@ void FrackMan::doSomething() {
                 break;
         }
     }
+}
+
+void FrackMan::getAnnoyed(int amt) {
+    setHealth(health()-2);
+    
+    if (health() <= 0) {
+        setDead();
+        getWorld()->playSound(SOUND_PLAYER_GIVE_UP);
+    }
+}
+
+// --------------------------- //
+// --------- BOULDER --------- //
+// --------------------------- //
+
+void Boulder::doSomething() {
+    if (!isAlive()) return;
+    
+    // STABLE STATE
+    else if (m_state == stable) {
+        int rockX = getX();
+        int rockY = getY();
+        bool dirtBelow = false;
+        
+        // Check for dirt beneath boulder
+        for (int x = rockX; x < rockX + 4; x++) {
+            if (getWorld()->isThereDirt(x, rockY))
+                dirtBelow = true;
+        }
+        
+        // No dirt below, enter waiting stage
+        if (!dirtBelow)
+            setState(waiting);
+    }
+    
+    // WAITING STATE: Wait for 30 ticks to transition to falling
+    else if (m_state == waiting) {
+        if (ticksWaited == 30) {
+            setState(falling);
+            getWorld()->playSound(SOUND_FALLING_ROCK);
+        }
+        else
+            ticksWaited++;
+    }
+    
+    // FALLING STATE
+    else if (m_state == falling) {
+        
+        // move down at 1 square/tick until
+        //  • hits bottom of oil field
+        //  • runs into top of other boulder
+        //  • runs into dirt
+        // set state to dead
+        
+        // if within radius of 3 to protestors or FrackMan, cause 100 points of annoyance
+    }
+    
 }

@@ -8,6 +8,11 @@ GameWorld* createStudentWorld(string assetDir)
 }
 
 int StudentWorld::init() {
+    
+    // Construct/initialize FrackMan
+    m_player = new FrackMan(this);
+    m_player->setVisible(true);
+    
     // Construct/initialize dirt
     for (int x = 0; x < 64; x++)
         for (int y = 0; y < 64; y++)
@@ -17,9 +22,8 @@ int StudentWorld::init() {
                 m_dirt[x][y]->setVisible(true);
             }
     
-    // Construct/initialize FrackMan
-    m_player = new FrackMan(this);
-    m_player->setVisible(true);
+    // Construct/initialize boulders
+    
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -28,6 +32,8 @@ int StudentWorld::move() {
     
     // FRACKMAN ACTIONS
     m_player->doSomething();
+    
+    // Check if dead!!!!!!!!!!!!!!!!!
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -51,11 +57,10 @@ bool StudentWorld::isThereDirt(int x, int y) {
     
     if (y < 0 || y > 59 || x < 0 || x > 63) return false;
     
-    if (m_dirt[x][y] != nullptr) return true;
-    else return false;
+    return m_dirt[x][y]->isAlive();
 }
 
 void StudentWorld::destroyDirt(int x, int y) {
     delete m_dirt[x][y];
-    m_dirt[x][y] = nullptr;
+    m_dirt[x][y]->setDead();
 }

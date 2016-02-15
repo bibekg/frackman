@@ -8,6 +8,10 @@
 
 class StudentWorld;
 
+// -------------------------- //
+// --------- ACTORS --------- //
+// -------------------------- //
+
 class Actor: public GraphObject {
 public:
     // constructor
@@ -15,31 +19,57 @@ public:
     : GraphObject(imageID, startX, startY, dir, size, depth) {
         m_studentWorld = studentWorld;
         setVisible(true);
+        m_alive = true;
     }
     
     virtual ~Actor() { setVisible(false); }
     virtual void doSomething() = 0;
     StudentWorld* getWorld();
+    
+    bool isAlive() { return m_alive; }
+    
+    void setDead() { m_alive = false; }
 
 private:
     StudentWorld* m_studentWorld;
+    bool m_alive;
 };
 
-class Dirt: public Actor {
+class LiveActor: public Actor {
 public:
-    Dirt(int startX, int startY, StudentWorld* studentWorld)
-    : Actor(IID_DIRT, startX, startY, studentWorld, right, 0.25, 3)
-    {}
+    LiveActor(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir = right, double size = 0, unsigned int depth = 0, int health = 100)
+    : Actor(imageID, startX, startY, studentWorld, dir, size, depth) {}
     
-    virtual ~Dirt() {}
-    void doSomething() { return; }
+    virtual ~LiveActor() {}
+    
+    virtual void getAnnoyed(int amt) = 0;
+    
+    // Getters
+    int health() { return m_health; }
+    
+    // Setters
+    void setHealth(int health) { m_health = health; }
+    
+private:
+    int m_health;
 };
 
-class FrackMan: public Actor {
+class StaticActor: public Actor {
+public:
+    StaticActor(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir = right, double size = 0, unsigned int depth = 0)
+    : Actor(imageID, startX, startY, studentWorld, dir, size, depth) {}
+    
+private:
+};
+
+// ------------------------------- //
+// --------- LIVE ACTORS --------- //
+// ------------------------------- //
+
+class FrackMan: public LiveActor {
 public:
     FrackMan(StudentWorld* studentWorld)
-    : Actor(IID_PLAYER, 30, 60, studentWorld, right, 1.0, 0) {
-        m_health = 10;
+    : LiveActor(IID_PLAYER, 30, 60, studentWorld, right, 1.0, 0, 10) {
         m_squirts = 5;
         m_sonars = 1;
         m_nuggets = 0;
@@ -47,11 +77,92 @@ public:
     
     virtual void doSomething();
     
+    virtual void getAnnoyed(int amt);
+    
+    // Getters
+    int squirts() { return m_squirts; }
+    int sonars() { return m_sonars; }
+    int nuggets() { return m_nuggets; }
+    
+    // Setters
+    void setSquirts(int squirts) { m_squirts = squirts; };
+    void setSonars(int sonars) { m_sonars = sonars; };
+    void setNuggets(int nuggets) { m_nuggets = nuggets; };
+    
 private:
-    int m_health;
     int m_squirts;
     int m_sonars;
     int m_nuggets;
+};
+
+class Protestor: public LiveActor {
+    
+};
+
+class HardCoreProtestor: public Protestor {
+    
+};
+
+// --------------------------------- //
+// --------- STATIC ACTORS --------- //
+// --------------------------------- //
+
+class Dirt: public StaticActor {      // change to StaticActor????
+public:
+    Dirt(int startX, int startY, StudentWorld* studentWorld)
+    : StaticActor(IID_DIRT, startX, startY, studentWorld, right, 0.25, 3)
+    {
+        setAlive(true);
+    }
+    
+    virtual ~Dirt() {}
+    void doSomething() { return; }
+};
+
+class Boulder: public StaticActor {
+public:
+    
+    enum State { stable, waiting, falling };
+    
+    Boulder(int startX, int startY, StudentWorld* studentWorld)
+    : StaticActor(IID_BOULDER, startX, startY, studentWorld, down, 1.0, 1)
+    {
+        m_state = stable;
+        setAlive(true);
+        ticksWaited = 0;
+    }
+    
+    virtual ~Boulder() {}
+    
+    virtual void doSomething();
+    
+    void setState(State state) {
+        m_state = state;
+    }
+    
+private:
+    State m_state;
+    int ticksWaited;
+};
+
+class Squirt: public StaticActor {
+    
+};
+
+class Oil: public StaticActor {
+    
+};
+
+class Nugget: public StaticActor {
+    
+};
+
+class SonarKit: public StaticActor {
+    
+};
+
+class WaterPool: public StaticActor {
+    
 };
 
 #endif // ACTOR_H_
