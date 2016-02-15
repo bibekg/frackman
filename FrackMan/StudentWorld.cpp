@@ -57,10 +57,10 @@ bool StudentWorld::isThereDirt(int x, int y) {
     
     if (y < 0 || y > 59 || x < 0 || x > 63) return false;
     
-    return m_dirt[x][y]->isAlive();
+    return m_dirt[x][y] != nullptr;
 }
 
 void StudentWorld::destroyDirt(int x, int y) {
+//    m_dirt[x][y]->setDead();
     delete m_dirt[x][y];
-    m_dirt[x][y]->setDead();
 }

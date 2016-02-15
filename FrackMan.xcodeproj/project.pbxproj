@@ -13,6 +13,7 @@
 		4B5BB27B1A911293009A9A96 /* GameWorld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4B5BB26D1A911293009A9A96 /* GameWorld.cpp */; };
 		4B5BB27C1A911293009A9A96 /* StudentWorld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4B5BB26E1A911293009A9A96 /* StudentWorld.cpp */; };
 		4B5BB2801A911630009A9A96 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B5BB27F1A911630009A9A96 /* OpenGL.framework */; };
+		A61DE6C81C7276D500998CBB /* notes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A61DE6C71C7276D400998CBB /* notes.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -46,6 +47,7 @@
 		4B5BB2771A911293009A9A96 /* SpriteManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SpriteManager.h; sourceTree = "<group>"; };
 		4B5BB2781A911293009A9A96 /* StudentWorld.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StudentWorld.h; sourceTree = "<group>"; };
 		4B5BB27F1A911630009A9A96 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		A61DE6C71C7276D400998CBB /* notes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = notes.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +92,7 @@
 				4B5BB2761A911293009A9A96 /* SoundFX.h */,
 				4B5BB2771A911293009A9A96 /* SpriteManager.h */,
 				4B5BB2641A9110AA009A9A96 /* main.cpp */,
+				A61DE6C71C7276D400998CBB /* notes.cpp */,
 			);
 			path = FrackMan;
 			sourceTree = "<group>";
@@ -199,6 +202,7 @@
 				4B5BB27B1A911293009A9A96 /* GameWorld.cpp in Sources */,
 				4B5BB27C1A911293009A9A96 /* StudentWorld.cpp in Sources */,
 				4B5BB2651A9110AA009A9A96 /* main.cpp in Sources */,
+				A61DE6C81C7276D500998CBB /* notes.cpp in Sources */,
 				4B5BB27A1A911293009A9A96 /* GameController.cpp in Sources */,
 				4B5BB2791A911293009A9A96 /* Actor.cpp in Sources */,
 			);

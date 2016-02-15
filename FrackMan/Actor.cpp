@@ -7,9 +7,7 @@
 // --------- ACTOR --------- //
 // ------------------------- //
 
-StudentWorld* Actor::getWorld() {
-    return m_studentWorld;
-}
+StudentWorld* Actor::getWorld() { return m_studentWorld; }
 
 // ---------------------------- //
 // --------- FRACKMAN --------- //

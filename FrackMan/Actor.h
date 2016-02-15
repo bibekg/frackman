@@ -29,6 +29,8 @@ public:
     bool isAlive() { return m_alive; }
     
     void setDead() { m_alive = false; }
+    
+    void setAlive() { m_alive = true; }
 
 private:
     StudentWorld* m_studentWorld;
@@ -112,11 +114,11 @@ public:
     Dirt(int startX, int startY, StudentWorld* studentWorld)
     : StaticActor(IID_DIRT, startX, startY, studentWorld, right, 0.25, 3)
     {
-        setAlive(true);
+//        setAlive();
     }
     
     virtual ~Dirt() {}
-    void doSomething() { return; }
+    void doSomething() {}
 };
 
 class Boulder: public StaticActor {
@@ -128,7 +130,7 @@ public:
     : StaticActor(IID_BOULDER, startX, startY, studentWorld, down, 1.0, 1)
     {
         m_state = stable;
-        setAlive(true);
+        setAlive();
         ticksWaited = 0;
     }
     
