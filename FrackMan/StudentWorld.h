@@ -7,16 +7,16 @@
 #include <string>
 #include <vector>
 
-// Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
+// Constants
+
+const int MAX_RADIUS = 6;
 
 class StudentWorld : public GameWorld
 {
 public:
     StudentWorld(std::string assetDir)
     : GameWorld(assetDir)
-    {
-        
-    }
+    {}
     
     virtual ~StudentWorld() {
         delete m_player;
@@ -35,10 +35,17 @@ public:
     
     void destroyDirt(int x, int y);
     
+    Actor::Name whatIsHere(int x, int y);
+    
 private:
     
     bool isMineShaftRegion(int x, int y);
     
+    bool canPlacePickupHere(int x, int y);
+    
+    bool isRadiusClear(int x, int y);
+    
+    int randInt(int min, int max);  // [min, max)
     
     FrackMan* m_player;
     Dirt* m_dirt[64][64];

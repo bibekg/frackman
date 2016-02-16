@@ -1,11 +1,23 @@
+#include <vector>
+
 #include "Actor.h"
 #include "StudentWorld.h"
+
+using namespace std;
 
 // Students:  Add code to this file (if you wish), Actor.h, StudentWorld.h, and StudentWorld.cpp
 
 // ------------------------- //
 // --------- ACTOR --------- //
 // ------------------------- //
+
+// constructor
+Actor::Actor(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir, double size, unsigned int depth)
+: GraphObject(imageID, startX, startY, dir, size, depth) {
+    m_studentWorld = studentWorld;
+    setVisible(true);
+    m_alive = true;
+}
 
 StudentWorld* Actor::getWorld() { return m_studentWorld; }
 
@@ -95,7 +107,7 @@ void Boulder::doSomething() {
         
         // Check for dirt beneath boulder
         for (int x = rockX; x < rockX + 4; x++) {
-            if (getWorld()->isThereDirt(x, rockY))
+            if (getWorld()->isThereDirt(x, rockY - 1))
                 dirtBelow = true;
         }
         
@@ -116,14 +128,57 @@ void Boulder::doSomething() {
     
     // FALLING STATE
     else if (m_state == falling) {
-        
-        // move down at 1 square/tick until
-        //  • hits bottom of oil field
-        //  • runs into top of other boulder
-        //  • runs into dirt
-        // set state to dead
-        
+
         // if within radius of 3 to protestors or FrackMan, cause 100 points of annoyance
+        
+        if (crashed()) {
+            setDead();
+        } else {
+            moveTo(getX(), getY() - 1);
+        }
     }
     
 }
+
+bool Boulder::crashed() {
+    
+    // Hit bottom of oil field
+    if (getY() == 0) return true;
+    
+    // Ran into other boulder
+    StudentWorld* world = getWorld();
+    
+    Actor::Name objectBelow[4];
+    
+    for (int i = 0; i < 4; i++) {
+        objectBelow[i] = world->whatIsHere(getX() + i, getY() - 1);
+        if (objectBelow[i] == boulder || objectBelow[i] == dirt)
+            return true;
+    }
+    
+    return false;
+}
+
+// -------------------------- //
+// --------- BARREL --------- //
+// -------------------------- //
+
+void Barrel::doSomething() {}
+
+// ------------------------ //
+// --------- GOLD --------- //
+// ------------------------ //
+
+void Gold::doSomething(){}
+
+// ---------------------------- //
+// --------- SONARKIT --------- //
+// ---------------------------- //
+
+void SonarKit::doSomething(){}
+
+// ------------------------------ //
+// --------- WATER POOL --------- //
+// ------------------------------ //
+
+void WaterPool::doSomething() {}
