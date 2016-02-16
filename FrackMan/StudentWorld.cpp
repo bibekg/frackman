@@ -19,11 +19,14 @@ int StudentWorld::init() {
     // Construct/initialize dirt
     for (int x = 0; x < 64; x++) {
         for (int y = 0; y < 64; y++)
+            
+            // Leave top of screen free of dirt
             if (y >= 60) m_dirt[x][y] = nullptr;
-    
+        
+        // Leave mineshaft empty, fill everything else
             else if (!isMineShaftRegion(x, y))
                 m_dirt[x][y] = new Dirt(x, y, this);
-    
+        
             else m_dirt[x][y] = nullptr;
     }
     
@@ -74,39 +77,27 @@ int StudentWorld::init() {
 
 int StudentWorld::move() {
     
+    // Ask player to do something
     m_player->doSomething();
     
     vector<Actor*>::iterator it = m_objects.begin();
     
-    // ONLY BOULDERS DOING SOMETHING RIGHT NOW
+    // Ask (alive) objects to do something
     while (it != m_objects.end()) {
-        if ((*it)->getName() == Actor::boulder && (*it)->isAlive()) {
+        if ((*it) != nullptr && (*it)->isAlive())
             (*it)->doSomething();
-        }
         it++;
     }
     
-    
-    
-    // Check if dead!!!!!!!!!!!!!!!!!
-    
-    
-    // CLEAN UP
-    
+    // Destroy and remove from vector objects that have died
     it = m_objects.begin();
-    
-    // ONLY BOULDERS DOING SOMETHING RIGHT NOW
     while (it != m_objects.end()) {
-        if ((*it)->getName() == Actor::boulder) {
-            if (!(*it)->isAlive() && !((*it) == nullptr)) { // is dead
-                delete (*it);
-                (*it) = nullptr;
-            }
-        }
-        it++;
+        if ((*it) != nullptr && !(*it)->isAlive()) {
+            delete (*it);
+            (*it) = nullptr;
+            it = m_objects.erase(it);
+        } else it++;
     }
-
-    
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -131,7 +122,7 @@ bool StudentWorld::isMineShaftRegion(int x, int y) {
 bool StudentWorld::canPlacePickupHere(int x, int y) {
     if (((x >= 27 && x <= 33) && (y >= 0)) || y > 56) return false;
     return true;
-
+    
 }
 
 bool StudentWorld::isThereDirt(int x, int y) {
@@ -169,8 +160,8 @@ bool StudentWorld::isRadiusClear(int x, int y) {
     vector<Actor*>::iterator it = m_objects.begin();
     
     while (it != m_objects.end()) {
-//        double radius = distance(x, (*it)->getX(), y, (*it)->getY());
-
+        //        double radius = distance(x, (*it)->getX(), y, (*it)->getY());
+        
         
         double radius = pow(pow((x-(*it)->getX()), 2) + pow((y-(*it)->getX()), 2), 0.5);
         if (radius <= MAX_RADIUS)       // found something in radius
@@ -180,7 +171,7 @@ bool StudentWorld::isRadiusClear(int x, int y) {
     }
     
     return true;    // no objects found to be within radius
-
+    
     
 }
 
