@@ -7,6 +7,10 @@ using namespace std;
 
 // Students:  Add code to this file (if you wish), Actor.h, StudentWorld.h, and StudentWorld.cpp
 
+double distance(int x1, int y1, int x2, int y2) {
+    return pow(pow((x1-x2), 2) + pow((y1-y2), 2), 0.5);
+}
+
 // ------------------------- //
 // --------- ACTOR --------- //
 // ------------------------- //
@@ -77,6 +81,12 @@ void FrackMan::doSomething() {
                 else
                     moveTo(getX(), getY());
                 break;
+            case KEY_PRESS_SPACE:
+                if (squirts() > 0) {
+                    getWorld()->spawnSquirt();
+//                    m_squirts--;
+                }
+                break;
             default:
                 break;
         }
@@ -95,6 +105,8 @@ void FrackMan::getAnnoyed(int amt) {
 // --------------------------- //
 // --------- BOULDER --------- //
 // --------------------------- //
+
+// !!! Boulder needs to check radius for protestors/FrackMan
 
 void Boulder::doSomething() {
     if (!isAlive()) return;
@@ -137,7 +149,6 @@ void Boulder::doSomething() {
             moveTo(getX(), getY() - 1);
         }
     }
-    
 }
 
 bool Boulder::crashed() {
@@ -146,17 +157,68 @@ bool Boulder::crashed() {
     if (getY() == 0) return true;
     
     // Ran into other boulder
-    StudentWorld* world = getWorld();
-    
-    Actor::Name objectBelow[4];
+//    StudentWorld* world = getWorld();
+//    
+//    Actor::Name objectBelow[4];
     
     for (int i = 0; i < 4; i++) {
-        objectBelow[i] = world->whatIsHere(getX() + i, getY() - 1);
-        if (objectBelow[i] == boulder || objectBelow[i] == dirt)
+//        objectBelow[i] = world->whatIsHere(getX() + i, getY() - 1);
+//        if (objectBelow[i] == boulder || objectBelow[i] == dirt)
+//            return true;
+        
+        if (getWorld()->projectileWillCrash(getX() + i, getY() - 1))
             return true;
     }
     
     return false;
+}
+
+// -------------------------- //
+// --------- SQUIRT --------- //
+// -------------------------- //
+
+void Squirt::doSomething() {
+    
+    StudentWorld* world = getWorld();
+    
+    // Near protestor, kill it
+    world->squirtProtestors(getX(), getY());
+    
+    // Squirt done moving, set it to dead
+    if (m_remainingDistance == 0)
+        setDead();
+    else
+        m_remainingDistance--;
+    
+    // Move squirt unless it will crash
+    switch (getDirection()) {
+        case GraphObject::up:
+            if (!world->projectileWillCrash(getX(), getY() + 4))
+                moveTo(getX(), getY() + 1);
+            else
+                setDead();
+            break;
+        case GraphObject::right:
+            if (!world->projectileWillCrash(getX() + 4, getY()))
+                moveTo(getX() + 1, getY());
+            else
+                setDead();
+            break;
+        case GraphObject::down:
+            if (!world->projectileWillCrash(getX(), getY() - 1))
+                moveTo(getX(), getY() - 1);
+            else
+                setDead();
+            break;
+        case GraphObject::left:
+            if (!world->projectileWillCrash(getX() - 1, getY()))
+                moveTo(getX() - 1, getY());
+            else
+                setDead();
+            break;
+        default:
+            break;
+    }
 }
 
 // -------------------------- //

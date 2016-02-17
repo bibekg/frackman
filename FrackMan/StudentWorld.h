@@ -11,8 +11,7 @@
 
 const int MAX_RADIUS = 6;
 
-class StudentWorld : public GameWorld
-{
+class StudentWorld : public GameWorld {
 public:
     StudentWorld(std::string assetDir)
     : GameWorld(assetDir)
@@ -31,11 +30,17 @@ public:
     
     virtual void cleanUp();
     
-    bool isThereDirt(int x, int y);
+    Actor::Name whatIsHere(int x, int y);
+    bool projectileWillCrash(int x, int y);
     
+    // Dirt functions
+    bool isThereDirt(int x, int y);
     void destroyDirt(int x, int y);
     
-    Actor::Name whatIsHere(int x, int y);
+    // Squirt functions
+    bool squirtProtestors(int x, int y);
+    void spawnSquirt();
+    bool canSquirtHere(int x, int y);
     
 private:
     

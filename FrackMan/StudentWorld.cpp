@@ -4,8 +4,7 @@
 
 using namespace std;
 
-GameWorld* createStudentWorld(string assetDir)
-{
+GameWorld* createStudentWorld(string assetDir) {
     return new StudentWorld(assetDir);
 }
 
@@ -77,9 +76,6 @@ int StudentWorld::init() {
 
 int StudentWorld::move() {
     
-    // Ask player to do something
-    m_player->doSomething();
-    
     vector<Actor*>::iterator it = m_objects.begin();
     
     // Ask (alive) objects to do something
@@ -88,6 +84,9 @@ int StudentWorld::move() {
             (*it)->doSomething();
         it++;
     }
+    
+    // Ask player to do something
+    m_player->doSomething();
     
     // Destroy and remove from vector objects that have died
     it = m_objects.begin();
@@ -103,13 +102,119 @@ int StudentWorld::move() {
 }
 
 void StudentWorld::cleanUp() {
-    delete m_player;
-    for (int x = 0; x < 64; x++)
+    
+    delete m_player;                    // Delete player
+    for (int x = 0; x < 64; x++)        // Delete dirt
         for (int y = 0; y < 64; y++)
             delete m_dirt[x][y];
     
-    // Delete m_objects
+    vector<Actor*>::iterator it;
+    it = m_objects.begin();
     
+    
+    while (it != m_objects.end()) {     // Delete all remaining objects
+        delete (*it);
+        (*it) = nullptr;
+    }
+}
+
+// Dirt functions
+
+bool StudentWorld::isThereDirt(int x, int y) {
+    
+    if (y < 0 || y > 59 || x < 0 || x > 63) return false;
+    
+    return m_dirt[x][y] != nullptr;
+}
+
+void StudentWorld::destroyDirt(int x, int y) {
+    delete m_dirt[x][y];
+    m_dirt[x][y] = nullptr;
+}
+
+// Boulder functions
+
+bool StudentWorld::projectileWillCrash(int x, int y) {
+    Actor::Name item = whatIsHere(x, y);
+    return (item == Actor::boulder || item == Actor::dirt);
+}
+
+// Squirt functions
+
+bool StudentWorld::squirtProtestors(int x, int y) {
+    
+    vector<Actor*>::iterator it = m_objects.begin();
+    bool protestorKilled = false;
+    
+    while (it != m_objects.end()) {
+        if ((*it) != nullptr && ((*it)->getName() == Actor::protestor || (*it)->getName() == Actor::hardcore) && (*it)->isAlive() && distance(x, (*it)->getX(), y, (*it)->getY()) < 3) {
+            (*it)->setDead();
+            protestorKilled = true;
+        } else it++;
+    }
+    
+    return protestorKilled;
+}
+
+void StudentWorld::spawnSquirt() {
+    int x = m_player->getX(), y = m_player->getY();
+    
+    playSound(SOUND_PLAYER_SQUIRT);
+    
+    // up and right failing
+    
+    
+    switch (m_player->getDirection()) {
+        case Actor::up:
+            if (canSquirtHere(x, y + 4))
+                m_objects.push_back(new Squirt(x, y + 4, m_player->getDirection(), this));
+            break;
+        case Actor::right:
+            if (canSquirtHere(x + 4, y))
+                m_objects.push_back(new Squirt(x + 4, y, m_player->getDirection(), this));
+            break;
+        case Actor::down:
+            if (canSquirtHere(x, y - 4))
+                m_objects.push_back(new Squirt(x, y - 4, m_player->getDirection(), this));
+            break;
+        case Actor::left:
+            if (canSquirtHere(x - 4, y))
+                m_objects.push_back(new Squirt(x - 4, y, m_player->getDirection(), this));
+            break;
+        default:
+            break;
+    }
+}
+
+bool StudentWorld::canSquirtHere(int x, int y) {
+    // CHECK FOR DIRT IN FOUR SPACES AHEAD!!!!!
+    
+    bool isDirt = false;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (isThereDirt(x+i, y+j)) {
+                isDirt = true;
+            }
+        }
+    }
+    
+    if (isDirt)
+        return false;
+    
+    vector<Actor*>::iterator it = m_objects.begin();
+    
+    bool canSquirt = true;
+    
+    while (it != m_objects.end()) {
+        
+        if ((*it)->getName() == Actor::boulder &&
+            distance(x,(*it)->getX(),y,(*it)->getY()) <= 3)
+        { canSquirt = false; }
+        
+        it++;
+    }
+    
+    return canSquirt;
 }
 
 // PRIVATE MEMBER FUNCTIONS
@@ -123,18 +228,6 @@ bool StudentWorld::canPlacePickupHere(int x, int y) {
     if (((x >= 27 && x <= 33) && (y >= 0)) || y > 56) return false;
     return true;
     
-}
-
-bool StudentWorld::isThereDirt(int x, int y) {
-    
-    if (y < 0 || y > 59 || x < 0 || x > 63) return false;
-    
-    return m_dirt[x][y] != nullptr;
-}
-
-void StudentWorld::destroyDirt(int x, int y) {
-    delete m_dirt[x][y];
-    m_dirt[x][y] = nullptr;
 }
 
 Actor::Name StudentWorld::whatIsHere(int x, int y) {
@@ -160,10 +253,7 @@ bool StudentWorld::isRadiusClear(int x, int y) {
     vector<Actor*>::iterator it = m_objects.begin();
     
     while (it != m_objects.end()) {
-        //        double radius = distance(x, (*it)->getX(), y, (*it)->getY());
-        
-        
-        double radius = pow(pow((x-(*it)->getX()), 2) + pow((y-(*it)->getX()), 2), 0.5);
+        double radius = distance(x, (*it)->getX(), y, (*it)->getY());
         if (radius <= MAX_RADIUS)       // found something in radius
             return false;
         

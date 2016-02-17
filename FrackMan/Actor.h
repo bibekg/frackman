@@ -4,7 +4,13 @@
 #include "GraphObject.h"
 #include "GameConstants.h"
 
-// Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
+// ------------------------------------ //
+// --------- GLOBAL FUNCTIONS --------- //
+// ------------------------------------ //
+
+double distance(int x1, int y1, int x2, int y2);
+
+// ------------------------------------ //
 
 class StudentWorld;
 
@@ -24,15 +30,15 @@ public:
     virtual void doSomething() = 0;
     StudentWorld* getWorld();
     
+    // Getters
+    Name getName() { return m_name; }
+    bool isAlive() { return m_alive; }
+    
     // Setters
     void setName(Name name) { m_name = name; }
     void setAlive() { m_alive = true; }
     void setDead() { m_alive = false; }
     
-    // Getters
-    Name getName() { return m_name; }
-    bool isAlive() { return m_alive; }
-
 private:
     StudentWorld* m_studentWorld;
     bool m_alive;
@@ -51,6 +57,7 @@ public:
     // Getters
     int health() { return m_health; }
     
+protected:
     // Setters
     void setHealth(int health) { m_health = health; }
     
@@ -109,7 +116,10 @@ public:
     virtual ~Boulder() {}
     
     virtual void doSomething();
+
+protected:
     
+    // Setters
     void setState(State state) {
         m_state = state;
     }
@@ -123,11 +133,19 @@ private:
 };
 
 class Squirt: public Actor {
-    Squirt(int startX, int startY, StudentWorld* studentWorld)
-    : Actor(IID_SONAR, startX, startY, studentWorld, right, 1.0, 2)
+public:
+    Squirt(int startX, int startY, Direction dir, StudentWorld* studentWorld)
+    : Actor(IID_WATER_SPURT, startX, startY, studentWorld, dir, 1.0, 1)
     {
-        
+        m_remainingDistance = 4;
     }
+    
+    virtual ~Squirt() {}
+    
+    virtual void doSomething();
+    
+private:
+    int m_remainingDistance;
 };
 
 // ------------------------------- //
@@ -156,9 +174,8 @@ public:
     int nuggets() { return m_nuggets; }
     
     // Setters
-    void setSquirts(int squirts) { m_squirts = squirts; };
-    void setSonars(int sonars) { m_sonars = sonars; };
-    void setNuggets(int nuggets) { m_nuggets = nuggets; };
+    void setSonars(int sonars) { m_sonars = sonars; }
+    void setNuggets(int nuggets) { m_nuggets = nuggets; }
     
 private:
     int m_squirts;
@@ -220,11 +237,4 @@ class WaterPool: public Pickup {
     
     virtual void doSomething();
 };
-
-// GLOBAL FUNCTIONS
-
-//double distance(int x1, int y1, int x2, int y2) {
-//    return pow(pow((x1-x2), 2) + pow((y1-y2), 2), 0.5);
-//}
-
 #endif // ACTOR_H_
