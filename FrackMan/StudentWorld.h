@@ -44,6 +44,16 @@ public:
     
 private:
     
+    void setDisplayText();
+    
+    bool playerDied();
+    
+    bool finishedLevel();
+    
+    int barrelsLeft();
+    
+    std::string formatDisplayText(int score, int level, int lives, int health, int squirts, int gold, int sonar, int barrelsRemaining);
+    
     bool isMineShaftRegion(int x, int y);
     
     bool canPlacePickupHere(int x, int y);
@@ -55,7 +65,7 @@ private:
     FrackMan* m_player;
     Dirt* m_dirt[64][64];
     
-    std::vector<Actor*> m_objects;
+    std::vector<Actor*> m_actors;
     
 };
 

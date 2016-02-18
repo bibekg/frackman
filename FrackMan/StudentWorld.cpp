@@ -1,6 +1,7 @@
 #include "StudentWorld.h"
 #include <string>
 #include <algorithm>
+#include <iomanip>
 
 using namespace std;
 
@@ -19,14 +20,12 @@ int StudentWorld::init() {
     for (int x = 0; x < 64; x++) {
         for (int y = 0; y < 64; y++)
             
-            // Leave top of screen free of dirt
-            if (y >= 60) m_dirt[x][y] = nullptr;
+            // Omit dirt on top and mineshaft
+            if (y >= 60 || isMineShaftRegion(x, y))
+                m_dirt[x][y] = nullptr;
         
-        // Leave mineshaft empty, fill everything else
-            else if (!isMineShaftRegion(x, y))
+            else
                 m_dirt[x][y] = new Dirt(x, y, this);
-        
-            else m_dirt[x][y] = nullptr;
     }
     
     // Construct/initialize boulders
@@ -35,15 +34,12 @@ int StudentWorld::init() {
         int randX = randInt(0, 60);
         int randY = randInt(20, 57);
         if (isRadiusClear(randX, randY) && canPlacePickupHere(randX, randY)) {
-            m_objects.push_back(new Boulder(randX, randY, this));
+            m_actors.push_back(new Boulder(randX, randY, this));
             
             // Remove dirt behind this boulder
-            for (int i = 0; i < 4; i++) {
-                for (int j = 0; j < 4; j++) {
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
                     destroyDirt(randX + i, randY + j);
-                }
-            }
-            
             i++;
         }
     }
@@ -54,7 +50,7 @@ int StudentWorld::init() {
         int randX = randInt(0, 60);
         int randY = randInt(20, 57);
         if (isRadiusClear(randX, randY) && canPlacePickupHere(randX, randY)) {
-            m_objects.push_back(new Gold(randX, randY, true, this));
+            m_actors.push_back(new Gold(randX, randY, true, this));
             i++;
         }
     }
@@ -65,7 +61,7 @@ int StudentWorld::init() {
         int randX = randInt(0, 60);
         int randY = randInt(20, 57);
         if (isRadiusClear(randX, randY) && canPlacePickupHere(randX, randY)) {
-            m_objects.push_back(new Barrel(randX, randY, this));
+            m_actors.push_back(new Barrel(randX, randY, this));
             i++;
         }
         
@@ -76,12 +72,20 @@ int StudentWorld::init() {
 
 int StudentWorld::move() {
     
-    vector<Actor*>::iterator it = m_objects.begin();
+    // Update status text
+    setDisplayText();
     
-    // Ask (alive) objects to do something
-    while (it != m_objects.end()) {
+    vector<Actor*>::iterator it = m_actors.begin();
+    while (it != m_actors.end()) {
+        
+        // Ask active actors to do something
         if ((*it) != nullptr && (*it)->isAlive())
             (*it)->doSomething();
+        
+        // Player died from actor action
+        if (playerDied())
+            return GWSTATUS_PLAYER_DIED;
+        
         it++;
     }
     
@@ -89,13 +93,23 @@ int StudentWorld::move() {
     m_player->doSomething();
     
     // Destroy and remove from vector objects that have died
-    it = m_objects.begin();
-    while (it != m_objects.end()) {
+    it = m_actors.begin();
+    while (it != m_actors.end()) {
         if ((*it) != nullptr && !(*it)->isAlive()) {
             delete (*it);
             (*it) = nullptr;
-            it = m_objects.erase(it);
+            it = m_actors.erase(it);
         } else it++;
+    }
+    
+    // Player died from his own action
+    if (playerDied())
+        return GWSTATUS_PLAYER_DIED;
+    
+    // No more oil barrels, FrackMan has finished the level
+    if (finishedLevel()) {
+        playSound(SOUND_FINISHED_LEVEL);
+        return GWSTATUS_FINISHED_LEVEL;
     }
     
     return GWSTATUS_CONTINUE_GAME;
@@ -109,10 +123,10 @@ void StudentWorld::cleanUp() {
             delete m_dirt[x][y];
     
     vector<Actor*>::iterator it;
-    it = m_objects.begin();
+    it = m_actors.begin();
     
     
-    while (it != m_objects.end()) {     // Delete all remaining objects
+    while (it != m_actors.end()) {     // Delete all remaining objects
         delete (*it);
         (*it) = nullptr;
     }
@@ -149,10 +163,10 @@ bool StudentWorld::projectileWillCrash(int x, int y) {
 
 bool StudentWorld::squirtProtestors(int x, int y) {
     
-    vector<Actor*>::iterator it = m_objects.begin();
+    vector<Actor*>::iterator it = m_actors.begin();
     bool protestorKilled = false;
     
-    while (it != m_objects.end()) {
+    while (it != m_actors.end()) {
         if ((*it) != nullptr && ((*it)->getName() == Actor::protestor || (*it)->getName() == Actor::hardcore) && (*it)->isAlive() && distance(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
             (*it)->setDead();
             protestorKilled = true;
@@ -173,19 +187,19 @@ void StudentWorld::spawnSquirt() {
     switch (m_player->getDirection()) {
         case Actor::up:
             if (canSquirtHere(x, y + 4))
-                m_objects.push_back(new Squirt(x, y + 4, m_player->getDirection(), this));
+                m_actors.push_back(new Squirt(x, y + 4, m_player->getDirection(), this));
             break;
         case Actor::right:
             if (canSquirtHere(x + 4, y))
-                m_objects.push_back(new Squirt(x + 4, y, m_player->getDirection(), this));
+                m_actors.push_back(new Squirt(x + 4, y, m_player->getDirection(), this));
             break;
         case Actor::down:
             if (canSquirtHere(x, y - 4))
-                m_objects.push_back(new Squirt(x, y - 4, m_player->getDirection(), this));
+                m_actors.push_back(new Squirt(x, y - 4, m_player->getDirection(), this));
             break;
         case Actor::left:
             if (canSquirtHere(x - 4, y))
-                m_objects.push_back(new Squirt(x - 4, y, m_player->getDirection(), this));
+                m_actors.push_back(new Squirt(x - 4, y, m_player->getDirection(), this));
             break;
         default:
             break;
@@ -203,11 +217,11 @@ bool StudentWorld::canSquirtHere(int x, int y) {
     if (isDirt)
         return false;
     
-    vector<Actor*>::iterator it = m_objects.begin();
+    vector<Actor*>::iterator it = m_actors.begin();
     
     bool canSquirt = true;
     
-    while (it != m_objects.end()) {
+    while (it != m_actors.end()) {
         if ((*it)->getName() == Actor::boulder && distance(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
             canSquirt = false;
             break;
@@ -221,6 +235,68 @@ bool StudentWorld::canSquirtHere(int x, int y) {
 // ------------------------------------- //
 // --------- PRIVATE FUNCTIONS --------- //
 // ------------------------------------- //
+
+void StudentWorld::setDisplayText() {
+    int score = getScore();
+    int level = getLevel();
+    int lives = getLives();
+    int health = m_player->health();
+    int squirts = m_player->squirts();
+    int gold = m_player->nuggets();
+    int sonar = m_player->sonars();
+    int barrelsRemaining = barrelsLeft();
+    // Next, create a string from your statistics, of the form:
+    // “Scr: 0321000 Lvl: 52 Lives: 3 Hlth: 80% Water: 20 Gld: 3 Sonar: 1 Oil Left: 2”
+    string s = formatDisplayText(score, level, lives, health, squirts, gold, sonar, barrelsRemaining);
+    // Finally, update the display text at the top of the screen with your // newly created stats
+    setGameStatText(s); // calls our provided GameWorld::setGameStatText
+}
+
+bool StudentWorld::playerDied() {
+    return !(m_player->isAlive());
+}
+
+bool StudentWorld::finishedLevel() {
+//    vector<Actor*>::iterator aBarrel;
+//    aBarrel = find_if(m_actors.begin(), m_actors.end(), [](Actor* a) {
+//        return a->getName() == Actor::barrel;
+//    });
+//    
+//    // No barrels left, FrackMan finished!
+//    return aBarrel == m_actors.end();
+    
+    return barrelsLeft() == 0;
+}
+
+int StudentWorld::barrelsLeft() {
+    int barrelCount;
+    
+    vector<Actor*>::iterator it = m_actors.begin();
+    while (it != m_actors.end()) {
+        if ((*it) != nullptr && (*it)->isAlive() && (*it)->getName() == Actor::boulder) {
+            barrelCount++;
+        }
+        it++;
+    }
+    
+    return barrelCount;
+}
+
+string StudentWorld::formatDisplayText(int score, int level, int lives, int health, int squirts, int gold, int sonar, int barrelsRemaining) {
+    string text;
+    
+    string scoreText = "Scr: " + std::string(6 - to_string(score).length(), '0') + to_string(score) + "  ";
+    string levelText = "Lvl: " + std::string(2 - to_string(level).length(), ' ') + to_string(level) + "  ";
+    string livesText = "Lives: " + to_string(lives) + "  ";
+    string healthText = "Hlth: " + std::string(3 - to_string(health*10).length(), ' ') + to_string(health*10) + "%  ";
+    string squirtsText = "Wtr: " + std::string(2 - to_string(squirts).length(), ' ') + to_string(squirts) + "  ";
+    string goldText = "Gld: " + std::string(2 - to_string(gold).length(), ' ') + to_string(gold) + "  ";
+    string sonarText = "Sonar: " + std::string(2 - to_string(sonar).length(), ' ') + to_string(sonar) + "  ";
+    string barrelsText = "Oil Left: " + std::string(2 - to_string(barrelsRemaining).length(), ' ') + to_string(barrelsRemaining);
+    
+    text = scoreText + levelText + livesText + healthText + squirtsText + goldText + sonarText + barrelsText;
+    return text;
+}
 
 bool StudentWorld::isMineShaftRegion(int x, int y) {
     if ((x >= 30 && x <= 33) && (y >= 4 && y <= 59)) return true;
@@ -238,9 +314,9 @@ Actor::Name StudentWorld::whatIsHere(int x, int y) {
     if (m_player->getX() == x && m_player->getY() == y)
         return Actor::frackman;
     
-    vector<Actor*>::iterator it = m_objects.begin();
+    vector<Actor*>::iterator it = m_actors.begin();
     
-    while (it != m_objects.end()) {
+    while (it != m_actors.end()) {
         if ((*it)->getX() == x && (*it)->getY() == y) {
             return (*it)->getName();
         }
@@ -253,9 +329,9 @@ Actor::Name StudentWorld::whatIsHere(int x, int y) {
 }
 
 bool StudentWorld::isRadiusClear(int x, int y) {
-    vector<Actor*>::iterator it = m_objects.begin();
+    vector<Actor*>::iterator it = m_actors.begin();
     
-    while (it != m_objects.end()) {
+    while (it != m_actors.end()) {
         double radius = distance(x, y, (*it)->getX(), (*it)->getY());
         if (radius <= MAX_RADIUS)       // found something in radius
             return false;

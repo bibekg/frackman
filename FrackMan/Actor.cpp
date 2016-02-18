@@ -46,9 +46,8 @@ void FrackMan::doSomething() {
             }
     if (dug) world->playSound(SOUND_DIG);
     
-    // Move FrackMan
-    int ch;
-    if (getWorld()->getKey(ch) == true) {
+    // Get user action
+    int ch; if (getWorld()->getKey(ch) == true) {
         switch (ch) {
             case KEY_PRESS_LEFT:
                 if (getDirection() != left)
@@ -82,6 +81,9 @@ void FrackMan::doSomething() {
                 else
                     moveTo(getX(), getY());
                 break;
+            case KEY_PRESS_ESCAPE:
+                getAnnoyed(10);
+                setDead();
             case KEY_PRESS_SPACE:
                 if (squirts() > 0) {
                     getWorld()->spawnSquirt();
@@ -141,7 +143,7 @@ void Boulder::doSomething() {
     
     // FALLING STATE
     else if (m_state == falling) {
-
+        
         // if within radius of 3 to protestors or FrackMan, cause 100 points of annoyance
         
         if (crashed()) {
@@ -158,14 +160,14 @@ bool Boulder::crashed() {
     if (getY() == 0) return true;
     
     // Ran into other boulder
-//    StudentWorld* world = getWorld();
-//    
-//    Actor::Name objectBelow[4];
+    //    StudentWorld* world = getWorld();
+    //
+    //    Actor::Name objectBelow[4];
     
     for (int i = 0; i < 4; i++) {
-//        objectBelow[i] = world->whatIsHere(getX() + i, getY() - 1);
-//        if (objectBelow[i] == boulder || objectBelow[i] == dirt)
-//            return true;
+        //        objectBelow[i] = world->whatIsHere(getX() + i, getY() - 1);
+        //        if (objectBelow[i] == boulder || objectBelow[i] == dirt)
+        //            return true;
         
         if (getWorld()->projectileWillCrash(getX() + i, getY() - 1))
             return true;

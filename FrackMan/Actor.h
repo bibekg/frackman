@@ -160,6 +160,7 @@ public:
         m_sonars = 1;
         m_nuggets = 0;
         setName(frackman);
+        setHealth(10);
     }
     
     virtual ~FrackMan(){}
