@@ -8,7 +8,8 @@ using namespace std;
 // Students:  Add code to this file (if you wish), Actor.h, StudentWorld.h, and StudentWorld.cpp
 
 double distance(int x1, int y1, int x2, int y2) {
-    return pow(pow((x1-x2), 2) + pow((y1-y2), 2), 0.5);
+    double distance = pow(pow((x1-x2), 2) + pow((y1-y2), 2), 0.5);
+    return distance;
 }
 
 // ------------------------- //
@@ -84,7 +85,7 @@ void FrackMan::doSomething() {
             case KEY_PRESS_SPACE:
                 if (squirts() > 0) {
                     getWorld()->spawnSquirt();
-//                    m_squirts--;
+                    m_squirts--;
                 }
                 break;
             default:

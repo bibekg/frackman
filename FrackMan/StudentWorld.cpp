@@ -118,7 +118,9 @@ void StudentWorld::cleanUp() {
     }
 }
 
-// Dirt functions
+// ------------------------ //
+// --------- DIRT --------- //
+// ------------------------ //
 
 bool StudentWorld::isThereDirt(int x, int y) {
     
@@ -132,14 +134,18 @@ void StudentWorld::destroyDirt(int x, int y) {
     m_dirt[x][y] = nullptr;
 }
 
-// Boulder functions
+// --------------------------- //
+// --------- BOULDER --------- //
+// --------------------------- //
 
 bool StudentWorld::projectileWillCrash(int x, int y) {
     Actor::Name item = whatIsHere(x, y);
     return (item == Actor::boulder || item == Actor::dirt);
 }
 
-// Squirt functions
+// -------------------------- //
+// --------- SQUIRT --------- //
+// -------------------------- //
 
 bool StudentWorld::squirtProtestors(int x, int y) {
     
@@ -147,7 +153,7 @@ bool StudentWorld::squirtProtestors(int x, int y) {
     bool protestorKilled = false;
     
     while (it != m_objects.end()) {
-        if ((*it) != nullptr && ((*it)->getName() == Actor::protestor || (*it)->getName() == Actor::hardcore) && (*it)->isAlive() && distance(x, (*it)->getX(), y, (*it)->getY()) < 3) {
+        if ((*it) != nullptr && ((*it)->getName() == Actor::protestor || (*it)->getName() == Actor::hardcore) && (*it)->isAlive() && distance(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
             (*it)->setDead();
             protestorKilled = true;
         } else it++;
@@ -187,16 +193,12 @@ void StudentWorld::spawnSquirt() {
 }
 
 bool StudentWorld::canSquirtHere(int x, int y) {
-    // CHECK FOR DIRT IN FOUR SPACES AHEAD!!!!!
     
     bool isDirt = false;
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            if (isThereDirt(x+i, y+j)) {
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            if (isThereDirt(x+i, y+j))
                 isDirt = true;
-            }
-        }
-    }
     
     if (isDirt)
         return false;
@@ -206,18 +208,19 @@ bool StudentWorld::canSquirtHere(int x, int y) {
     bool canSquirt = true;
     
     while (it != m_objects.end()) {
-        
-        if ((*it)->getName() == Actor::boulder &&
-            distance(x,(*it)->getX(),y,(*it)->getY()) <= 3)
-        { canSquirt = false; }
-        
+        if ((*it)->getName() == Actor::boulder && distance(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
+            canSquirt = false;
+            break;
+        }
         it++;
     }
     
     return canSquirt;
 }
 
-// PRIVATE MEMBER FUNCTIONS
+// ------------------------------------- //
+// --------- PRIVATE FUNCTIONS --------- //
+// ------------------------------------- //
 
 bool StudentWorld::isMineShaftRegion(int x, int y) {
     if ((x >= 30 && x <= 33) && (y >= 4 && y <= 59)) return true;
@@ -253,7 +256,7 @@ bool StudentWorld::isRadiusClear(int x, int y) {
     vector<Actor*>::iterator it = m_objects.begin();
     
     while (it != m_objects.end()) {
-        double radius = distance(x, (*it)->getX(), y, (*it)->getY());
+        double radius = distance(x, y, (*it)->getX(), (*it)->getY());
         if (radius <= MAX_RADIUS)       // found something in radius
             return false;
         

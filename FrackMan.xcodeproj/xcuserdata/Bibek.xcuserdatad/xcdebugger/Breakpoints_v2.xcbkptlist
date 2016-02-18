@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FrackMan/StudentWorld.cpp"
-            timestampString = "477385064.137152"
+            timestampString = "477430893.66022"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "96"
-            endingLineNumber = "96"
+            startingLineNumber = "95"
+            endingLineNumber = "95"
             landmarkName = "StudentWorld::move()"
             landmarkType = "5">
          </BreakpointContent>
@@ -26,11 +26,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FrackMan/Actor.cpp"
-            timestampString = "477392300.343049"
+            timestampString = "477455538.981178"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "42"
-            endingLineNumber = "42"
+            startingLineNumber = "43"
+            endingLineNumber = "43"
             landmarkName = "FrackMan::doSomething()"
             landmarkType = "5">
          </BreakpointContent>
@@ -42,11 +42,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FrackMan/Actor.cpp"
-            timestampString = "477427545.005789"
+            timestampString = "477455538.981178"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "168"
-            endingLineNumber = "168"
+            startingLineNumber = "169"
+            endingLineNumber = "169"
             landmarkName = "Boulder::crashed()"
             landmarkType = "5">
          </BreakpointContent>
@@ -58,23 +58,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FrackMan/StudentWorld.cpp"
-            timestampString = "477396195.762172"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "99"
-            endingLineNumber = "99"
-            landmarkName = "StudentWorld::move()"
-            landmarkType = "5">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "FrackMan/StudentWorld.cpp"
-            timestampString = "477396197.455655"
+            timestampString = "477430893.66022"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "98"
@@ -90,11 +74,27 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FrackMan/StudentWorld.cpp"
-            timestampString = "477397268.487216"
+            timestampString = "477430893.66022"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "162"
-            endingLineNumber = "162"
+            startingLineNumber = "97"
+            endingLineNumber = "97"
+            landmarkName = "StudentWorld::move()"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "FrackMan/StudentWorld.cpp"
+            timestampString = "477430893.66022"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "167"
+            endingLineNumber = "167"
             landmarkName = "StudentWorld::spawnSquirt()"
             landmarkType = "5">
          </BreakpointContent>
@@ -106,27 +106,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FrackMan/StudentWorld.cpp"
-            timestampString = "477429314.481213"
+            timestampString = "477430893.66022"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "191"
-            endingLineNumber = "191"
-            landmarkName = "StudentWorld::canSquirtHere(int x, int y)"
-            landmarkType = "5">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "FrackMan/StudentWorld.cpp"
-            timestampString = "477429314.481213"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "217"
-            endingLineNumber = "217"
+            startingLineNumber = "196"
+            endingLineNumber = "196"
             landmarkName = "StudentWorld::canSquirtHere(int x, int y)"
             landmarkType = "5">
          </BreakpointContent>
@@ -138,7 +122,23 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FrackMan/StudentWorld.cpp"
-            timestampString = "477428243.663773"
+            timestampString = "477430893.66022"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "82"
+            endingLineNumber = "82"
+            landmarkName = "StudentWorld::move()"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "FrackMan/StudentWorld.cpp"
+            timestampString = "477430893.66022"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "83"
@@ -150,31 +150,15 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "FrackMan/StudentWorld.cpp"
-            timestampString = "477428243.663773"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "84"
-            endingLineNumber = "84"
-            landmarkName = "StudentWorld::move()"
-            landmarkType = "5">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FrackMan/Actor.cpp"
-            timestampString = "477428386.061493"
+            timestampString = "477455538.981178"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "213"
-            endingLineNumber = "213"
+            startingLineNumber = "214"
+            endingLineNumber = "214"
             landmarkName = "Squirt::doSomething()"
             landmarkType = "5">
          </BreakpointContent>
@@ -186,12 +170,44 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "FrackMan/StudentWorld.cpp"
-            timestampString = "477428618.236929"
+            timestampString = "477430893.66022"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "94"
-            endingLineNumber = "94"
+            startingLineNumber = "93"
+            endingLineNumber = "93"
             landmarkName = "StudentWorld::move()"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "FrackMan/StudentWorld.cpp"
+            timestampString = "477455140.758033"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "212"
+            endingLineNumber = "212"
+            landmarkName = "StudentWorld::canSquirtHere(int x, int y)"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "FrackMan/StudentWorld.cpp"
+            timestampString = "477455770.273165"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "215"
+            endingLineNumber = "215"
+            landmarkName = "StudentWorld::canSquirtHere(int x, int y)"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
