@@ -42,6 +42,8 @@ public:
     void spawnSquirt();
     bool canSquirtHere(int x, int y);
     
+    bool crushLiveActorBelow(int x, int y);
+    
 private:
     
     void setDisplayText();

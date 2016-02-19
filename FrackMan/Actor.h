@@ -21,28 +21,33 @@ class StudentWorld;
 class Actor: public GraphObject {
 public:
     
-    enum Name { dirt, boulder, squirt, frackman, protestor, hardcore, barrel, gold, sonarkit, waterpool, nothing };
+//    enum Name { dirt, boulder, squirt, frackman, protestor, hardcore, barrel, gold, sonarkit, waterpool, nothing };
     
     // constructor
     Actor(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir = right, double size = 0, unsigned int depth = 0);
     
     virtual ~Actor() { setVisible(false); }
-    virtual void doSomething() = 0;
     StudentWorld* getWorld();
     
+    virtual bool canGetCrushed() { return false; }
+    
+    virtual void doSomething() = 0;
+
+    virtual void getAnnoyed(int amt) {};
+    
     // Getters
-    Name getName() { return m_name; }
+//    Name getName() { return m_name; }
     bool isAlive() { return m_alive; }
     
     // Setters
-    void setName(Name name) { m_name = name; }
+//    void setName(Name name) { m_name = name; }
     void setAlive() { m_alive = true; }
     void setDead() { m_alive = false; }
     
 private:
     StudentWorld* m_studentWorld;
     bool m_alive;
-    Name m_name;
+//    Name m_name;
 };
 
 class LiveActor: public Actor {
@@ -52,7 +57,9 @@ public:
     
     virtual ~LiveActor() {}
     
-    virtual void getAnnoyed(int amt) = 0;
+    virtual void getAnnoyed(int amt);
+    
+    virtual bool canGetCrushed() { return true; }
     
     // Getters
     int health() { return m_health; }
@@ -185,6 +192,8 @@ private:
 };
 
 class Protestor: public LiveActor {
+    
+    void getAnnoyed(int amt);
     
 };
 

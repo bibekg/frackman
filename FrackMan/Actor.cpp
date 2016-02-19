@@ -26,6 +26,14 @@ Actor::Actor(int imageID, int startX, int startY, StudentWorld* studentWorld, Di
 
 StudentWorld* Actor::getWorld() { return m_studentWorld; }
 
+void LiveActor::getAnnoyed(int amt) {
+    setHealth(health()-amt);
+    
+    if (health() <= 0) {
+        setDead();
+    }
+}
+
 // ---------------------------- //
 // --------- FRACKMAN --------- //
 // ---------------------------- //
@@ -97,11 +105,24 @@ void FrackMan::doSomething() {
 }
 
 void FrackMan::getAnnoyed(int amt) {
-    setHealth(health()-2);
+    setHealth(health()-amt);
     
     if (health() <= 0) {
         setDead();
         getWorld()->playSound(SOUND_PLAYER_GIVE_UP);
+    }
+}
+
+// ----------------------------- //
+// --------- PROTESTOR --------- //
+// ----------------------------- //
+
+void Protestor::getAnnoyed(int amt) {
+    setHealth(health()-amt);
+    
+    if (health() <= 0) {
+        setDead();
+        getWorld()->playSound(SOUND_PROTESTER_GIVE_UP);
     }
 }
 
@@ -145,6 +166,7 @@ void Boulder::doSomething() {
     else if (m_state == falling) {
         
         // if within radius of 3 to protestors or FrackMan, cause 100 points of annoyance
+        getWorld()->crushLiveActorBelow(getX(), getY());
         
         if (crashed()) {
             setDead();
@@ -159,15 +181,7 @@ bool Boulder::crashed() {
     // Hit bottom of oil field
     if (getY() == 0) return true;
     
-    // Ran into other boulder
-    //    StudentWorld* world = getWorld();
-    //
-    //    Actor::Name objectBelow[4];
-    
     for (int i = 0; i < 4; i++) {
-        //        objectBelow[i] = world->whatIsHere(getX() + i, getY() - 1);
-        //        if (objectBelow[i] == boulder || objectBelow[i] == dirt)
-        //            return true;
         
         if (getWorld()->projectileWillCrash(getX() + i, getY() - 1))
             return true;
@@ -184,8 +198,9 @@ void Squirt::doSomething() {
     
     StudentWorld* world = getWorld();
     
-    // Near protestor, kill it
-    world->squirtProtestors(getX(), getY());
+    // If near protestor, kill it and remove squirt
+    if(world->squirtProtestors(getX(), getY()))
+        setDead();
     
     // Squirt done moving, set it to dead
     if (m_remainingDistance == 0)

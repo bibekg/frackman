@@ -83,8 +83,10 @@ int StudentWorld::move() {
             (*it)->doSomething();
         
         // Player died from actor action
-        if (playerDied())
+        if (playerDied()) {
+            decLives();
             return GWSTATUS_PLAYER_DIED;
+        }
         
         it++;
     }
@@ -128,8 +130,32 @@ void StudentWorld::cleanUp() {
     
     while (it != m_actors.end()) {     // Delete all remaining objects
         delete (*it);
-        (*it) = nullptr;
+        it = m_actors.erase(it);
     }
+}
+
+Actor::Name StudentWorld::whatIsHere(int x, int y) {
+    
+    if (m_player->getX() == x && m_player->getY() == y)
+        return Actor::frackman;
+    
+    vector<Actor*>::iterator it = m_actors.begin();
+    
+    while (it != m_actors.end()) {
+        if ((*it)->getX() == x && (*it)->getY() == y) {
+            return (*it)->getName();
+        }
+        it++;
+    }
+    
+    if (m_dirt[x][y] != nullptr) return Actor::dirt;
+    
+    return Actor::nothing;
+}
+
+bool StudentWorld::projectileWillCrash(int x, int y) {
+    Actor::Name item = whatIsHere(x, y);
+    return (item == Actor::boulder || item == Actor::dirt);
 }
 
 // ------------------------ //
@@ -152,9 +178,30 @@ void StudentWorld::destroyDirt(int x, int y) {
 // --------- BOULDER --------- //
 // --------------------------- //
 
-bool StudentWorld::projectileWillCrash(int x, int y) {
-    Actor::Name item = whatIsHere(x, y);
-    return (item == Actor::boulder || item == Actor::dirt);
+bool StudentWorld::crushLiveActorBelow(int x, int y) {
+    vector<Actor*>::iterator it = m_actors.begin();
+    bool actorCrushed = false;
+    
+    // Check if FrackMan will get crushed
+    int playerX = m_player->getX(), playerY = m_player->getY();
+    if (distance(x, y, playerX, playerY) <= 3) {
+        m_player->getAnnoyed(100);
+        actorCrushed = true;
+    }
+    
+    else {
+        // Check if protestors will get crushed
+        while (it != m_actors.end()) {
+            if ((*it)->isAlive() && (*it)->canGetCrushed() && distance(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
+                (*it)->getAnnoyed(100);
+                actorCrushed = true;
+            }
+            
+            it++;
+        }
+    }
+    
+    return actorCrushed;
 }
 
 // -------------------------- //
@@ -164,16 +211,16 @@ bool StudentWorld::projectileWillCrash(int x, int y) {
 bool StudentWorld::squirtProtestors(int x, int y) {
     
     vector<Actor*>::iterator it = m_actors.begin();
-    bool protestorKilled = false;
+    bool protestorAnnoyed = false;
     
     while (it != m_actors.end()) {
         if ((*it) != nullptr && ((*it)->getName() == Actor::protestor || (*it)->getName() == Actor::hardcore) && (*it)->isAlive() && distance(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
-            (*it)->setDead();
-            protestorKilled = true;
+            (*it)->getAnnoyed(2);
+            protestorAnnoyed = true;
         } else it++;
     }
     
-    return protestorKilled;
+    return protestorAnnoyed;
 }
 
 void StudentWorld::spawnSquirt() {
@@ -257,19 +304,19 @@ bool StudentWorld::playerDied() {
 }
 
 bool StudentWorld::finishedLevel() {
-//    vector<Actor*>::iterator aBarrel;
-//    aBarrel = find_if(m_actors.begin(), m_actors.end(), [](Actor* a) {
-//        return a->getName() == Actor::barrel;
-//    });
-//    
-//    // No barrels left, FrackMan finished!
-//    return aBarrel == m_actors.end();
+    //    vector<Actor*>::iterator aBarrel;
+    //    aBarrel = find_if(m_actors.begin(), m_actors.end(), [](Actor* a) {
+    //        return a->getName() == Actor::barrel;
+    //    });
+    //
+    //    // No barrels left, FrackMan finished!
+    //    return aBarrel == m_actors.end();
     
     return barrelsLeft() == 0;
 }
 
 int StudentWorld::barrelsLeft() {
-    int barrelCount;
+    int barrelCount = 0;
     
     vector<Actor*>::iterator it = m_actors.begin();
     while (it != m_actors.end()) {
@@ -307,25 +354,6 @@ bool StudentWorld::canPlacePickupHere(int x, int y) {
     if (((x >= 27 && x <= 33) && (y >= 0)) || y > 56) return false;
     return true;
     
-}
-
-Actor::Name StudentWorld::whatIsHere(int x, int y) {
-    
-    if (m_player->getX() == x && m_player->getY() == y)
-        return Actor::frackman;
-    
-    vector<Actor*>::iterator it = m_actors.begin();
-    
-    while (it != m_actors.end()) {
-        if ((*it)->getX() == x && (*it)->getY() == y) {
-            return (*it)->getName();
-        }
-        it++;
-    }
-    
-    if (m_dirt[x][y] != nullptr) return Actor::dirt;
-    
-    return Actor::nothing;
 }
 
 bool StudentWorld::isRadiusClear(int x, int y) {
