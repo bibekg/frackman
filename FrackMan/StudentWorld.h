@@ -17,17 +17,10 @@ public:
     : GameWorld(assetDir)
     {}
     
-    virtual ~StudentWorld() {
-        delete m_player;
-        for (int x = 0; x < 64; x++)
-            for (int y = 0; y < 64; y++)
-                delete m_dirt[x][y];
-    }
+    virtual ~StudentWorld();
     
     virtual int init();
-    
     virtual int move();
-    
     virtual void cleanUp();
     
     Actor::Name whatIsHere(int x, int y);
@@ -43,31 +36,32 @@ public:
     bool canSquirtHere(int x, int y);
     
     bool crushLiveActorBelow(int x, int y);
+    bool makeVisibleIfNearby(Pickup* pickup);
+    bool pickupPickupIfNearby(Pickup* pickup);
+    void frackManFoundItem(Pickup* pickup);
     
 private:
     
+    // Private Member Functions
+    
     void setDisplayText();
-    
     bool playerDied();
-    
     bool finishedLevel();
-    
     int barrelsLeft();
     
     std::string formatDisplayText(int score, int level, int lives, int health, int squirts, int gold, int sonar, int barrelsRemaining);
-    
     bool isMineShaftRegion(int x, int y);
-    
     bool canPlacePickupHere(int x, int y);
-    
     bool isRadiusClear(int x, int y);
-    
     int randInt(int min, int max);  // [min, max)
+    
+    // Private Member Variables
     
     FrackMan* m_player;
     Dirt* m_dirt[64][64];
-    
     std::vector<Actor*> m_actors;
+    
+    int m_barrelsLeft;
     
 };
 

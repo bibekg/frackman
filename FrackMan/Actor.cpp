@@ -1,5 +1,6 @@
 #include <vector>
 
+#include <algorithm>
 #include "Actor.h"
 #include "StudentWorld.h"
 
@@ -7,7 +8,7 @@ using namespace std;
 
 // Students:  Add code to this file (if you wish), Actor.h, StudentWorld.h, and StudentWorld.cpp
 
-double distance(int x1, int y1, int x2, int y2) {
+double radius(int x1, int y1, int x2, int y2) {
     double distance = pow(pow((x1-x2), 2) + pow((y1-y2), 2), 0.5);
     return distance;
 }
@@ -16,7 +17,6 @@ double distance(int x1, int y1, int x2, int y2) {
 // --------- ACTOR --------- //
 // ------------------------- //
 
-// constructor
 Actor::Actor(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir, double size, unsigned int depth)
 : GraphObject(imageID, startX, startY, dir, size, depth) {
     m_studentWorld = studentWorld;
@@ -26,12 +26,57 @@ Actor::Actor(int imageID, int startX, int startY, StudentWorld* studentWorld, Di
 
 StudentWorld* Actor::getWorld() { return m_studentWorld; }
 
+// ------------------------------ //
+// --------- LIVE ACTOR --------- //
+// ------------------------------ //
+
+LiveActor::LiveActor(int imageID, int startX, int startY, StudentWorld* studentWorld, int health, Direction dir, double size, unsigned int depth)
+: Actor(imageID, startX, startY, studentWorld, dir, size, depth) {
+    m_health = health;
+}
+
 void LiveActor::getAnnoyed(int amt) {
-    setHealth(health()-amt);
+    decHealth(amt);
     
     if (health() <= 0) {
         setDead();
     }
+}
+
+// -------------------------- //
+// --------- PICKUP --------- //
+// -------------------------- //
+
+Pickup::Pickup(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir, double size, unsigned int depth)
+: Actor(imageID, startX, startY, studentWorld, dir, size, depth) {
+    makePickupVisible(false);
+}
+
+void Pickup::makePickupVisible(bool shouldDisplay) {
+    m_isVisible = shouldDisplay;
+    //    setVisible(shouldDisplay);    // UNCOMMENT THIS TO HIDE PICKUPS
+}
+
+// ----------------------------------- //
+// --------- TEMPORARYPICKUP --------- //
+// ----------------------------------- //
+
+TemporaryPickup::TemporaryPickup(int imageID, int startX, int startY, StudentWorld* studentWorld, int timeLeft)
+: Pickup(imageID, startX, startY, studentWorld) {
+    m_ticksRemaining = timeLeft;
+}
+
+void TemporaryPickup::doSomething() {
+    if (!isAlive())
+        return;
+    
+    StudentWorld* world = getWorld();
+    if (world->pickupPickupIfNearby(this))
+        world->frackManFoundItem(this);
+    
+    if (ticksRemaining() <= 0)
+        setDead();
+    else decrementTicks();
 }
 
 // ---------------------------- //
@@ -105,7 +150,7 @@ void FrackMan::doSomething() {
 }
 
 void FrackMan::getAnnoyed(int amt) {
-    setHealth(health()-amt);
+    decHealth(amt);
     
     if (health() <= 0) {
         setDead();
@@ -118,7 +163,7 @@ void FrackMan::getAnnoyed(int amt) {
 // ----------------------------- //
 
 void Protestor::getAnnoyed(int amt) {
-    setHealth(health()-amt);
+    decHealth(amt);
     
     if (health() <= 0) {
         setDead();
@@ -243,22 +288,86 @@ void Squirt::doSomething() {
 // --------- BARREL --------- //
 // -------------------------- //
 
-void Barrel::doSomething() {}
+Barrel::Barrel(int startX, int startY, StudentWorld* studentWorld)
+: Pickup(IID_BARREL, startX, startY, studentWorld, right, 1.0, 2) {
+    setName(barrel);
+}
+
+void Barrel::doSomething() {
+    if (!isAlive())
+        return;
+    
+    if (getWorld()->makeVisibleIfNearby(this))
+        return;
+    
+    StudentWorld* world = getWorld();
+    if (world->pickupPickupIfNearby(this))
+        world->frackManFoundItem(this);
+}
 
 // ------------------------ //
 // --------- GOLD --------- //
 // ------------------------ //
 
-void Gold::doSomething(){}
+Gold::Gold(int startX, int startY, PickupableBy whoCanPickUp, TimeLimit timeLimit, StudentWorld* studentWorld)
+: Pickup(IID_GOLD, startX, startY, studentWorld, right, 1.0, 2) {
+    m_whoCanPickUp = whoCanPickUp;
+    m_timeLimit = timeLimit;
+    ticksRemaining = 100;
+    setName(gold);
+}
+
+void Gold::doSomething() {
+    
+    if (!isAlive())
+        setDead();
+    
+    if (getWorld()->makeVisibleIfNearby(this))
+        return;
+    
+    StudentWorld* world = getWorld();
+    if (m_whoCanPickUp == frackman && world->pickupPickupIfNearby(this))
+        world->frackManFoundItem(this);
+    
+    else if (m_whoCanPickUp == protestor) {
+        // Protestor needs to pick up gold
+    }
+    
+    // Remove gold if it has waited 100 ticks
+    if (m_timeLimit == temporary) {
+        if (ticksRemaining <= 0)
+            setDead();
+        else ticksRemaining--;
+    }
+    
+    
+}
 
 // ---------------------------- //
 // --------- SONARKIT --------- //
 // ---------------------------- //
 
-void SonarKit::doSomething(){}
+SonarKit::SonarKit(int startX, int startY, int frackManCanPickUp, StudentWorld* studentWorld)
+: TemporaryPickup(IID_SONAR, startX, startY, studentWorld, max(100, 300 - 10 * int(studentWorld->getLevel()))) {
+    setName(sonarkit);
+    setVisible(true);
+}
 
 // ------------------------------ //
 // --------- WATER POOL --------- //
 // ------------------------------ //
 
-void WaterPool::doSomething() {}
+WaterPool::WaterPool(int startX, int startY, int frackManCanPickUp, StudentWorld* studentWorld)
+: TemporaryPickup(IID_SONAR, startX, startY, studentWorld, min(100, 300 - 10 * int(studentWorld->getLevel()))) {
+    setName(waterpool);
+    setVisible(true);
+}
+
+
+
+
+
+
+
+
+

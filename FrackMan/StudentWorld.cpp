@@ -9,6 +9,13 @@ GameWorld* createStudentWorld(string assetDir) {
     return new StudentWorld(assetDir);
 }
 
+StudentWorld::~StudentWorld() {
+    delete m_player;
+    for (int x = 0; x < 64; x++)
+        for (int y = 0; y < 64; y++)
+            delete m_dirt[x][y];
+}
+
 int StudentWorld::init() {
     
     int currentLevel = getLevel();
@@ -31,9 +38,11 @@ int StudentWorld::init() {
     // Construct/initialize boulders
     int boulders = min(currentLevel / 2 + 2, 6);
     for (int i = 0; i < boulders;) {
-        int randX = randInt(0, 60);
-        int randY = randInt(20, 57);
-        if (isRadiusClear(randX, randY) && canPlacePickupHere(randX, randY)) {
+//        int randX = randInt(0, 60);
+//        int randY = randInt(20, 57);
+
+        int randX = randInt(5, 8);
+        int randY = randInt(20, 57);if (isRadiusClear(randX, randY) && canPlacePickupHere(randX, randY)) {
             m_actors.push_back(new Boulder(randX, randY, this));
             
             // Remove dirt behind this boulder
@@ -50,7 +59,7 @@ int StudentWorld::init() {
         int randX = randInt(0, 60);
         int randY = randInt(20, 57);
         if (isRadiusClear(randX, randY) && canPlacePickupHere(randX, randY)) {
-            m_actors.push_back(new Gold(randX, randY, true, this));
+            m_actors.push_back(new Gold(randX, randY, Gold::frackman, Gold::permanent, this));
             i++;
         }
     }
@@ -64,8 +73,8 @@ int StudentWorld::init() {
             m_actors.push_back(new Barrel(randX, randY, this));
             i++;
         }
-        
     }
+    m_barrelsLeft = barrels;
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -142,9 +151,8 @@ Actor::Name StudentWorld::whatIsHere(int x, int y) {
     vector<Actor*>::iterator it = m_actors.begin();
     
     while (it != m_actors.end()) {
-        if ((*it)->getX() == x && (*it)->getY() == y) {
+        if ((*it)->getX() == x && (*it)->getY() == y)
             return (*it)->getName();
-        }
         it++;
     }
     
@@ -184,7 +192,7 @@ bool StudentWorld::crushLiveActorBelow(int x, int y) {
     
     // Check if FrackMan will get crushed
     int playerX = m_player->getX(), playerY = m_player->getY();
-    if (distance(x, y, playerX, playerY) <= 3) {
+    if (radius(x, y, playerX, playerY) <= 3) {
         m_player->getAnnoyed(100);
         actorCrushed = true;
     }
@@ -192,7 +200,7 @@ bool StudentWorld::crushLiveActorBelow(int x, int y) {
     else {
         // Check if protestors will get crushed
         while (it != m_actors.end()) {
-            if ((*it)->isAlive() && (*it)->canGetCrushed() && distance(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
+            if ((*it)->isAlive() && (*it)->canGetCrushed() && radius(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
                 (*it)->getAnnoyed(100);
                 actorCrushed = true;
             }
@@ -214,7 +222,7 @@ bool StudentWorld::squirtProtestors(int x, int y) {
     bool protestorAnnoyed = false;
     
     while (it != m_actors.end()) {
-        if ((*it) != nullptr && ((*it)->getName() == Actor::protestor || (*it)->getName() == Actor::hardcore) && (*it)->isAlive() && distance(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
+        if ((*it) != nullptr && ((*it)->getName() == Actor::protestor || (*it)->getName() == Actor::hardcore) && (*it)->isAlive() && radius(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
             (*it)->getAnnoyed(2);
             protestorAnnoyed = true;
         } else it++;
@@ -269,7 +277,7 @@ bool StudentWorld::canSquirtHere(int x, int y) {
     bool canSquirt = true;
     
     while (it != m_actors.end()) {
-        if ((*it)->getName() == Actor::boulder && distance(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
+        if ((*it)->getName() == Actor::boulder && radius(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
             canSquirt = false;
             break;
         }
@@ -277,6 +285,52 @@ bool StudentWorld::canSquirtHere(int x, int y) {
     }
     
     return canSquirt;
+}
+
+// --------------------------- //
+// --------- PICKUPS --------- //
+// --------------------------- //
+
+bool StudentWorld::makeVisibleIfNearby(Pickup* pickup) {
+
+    if (!pickup->isPickupVisible() &&
+        radius(pickup->getX(), pickup->getY(), m_player->getX(), m_player->getY()) <= 4) {
+        pickup->makePickupVisible(true);
+        return true;
+    } return false;
+}
+
+bool StudentWorld::pickupPickupIfNearby(Pickup* pickup) {
+    if(radius(pickup->getX(), pickup->getY(), m_player->getX(), m_player->getY()) <= 3) {
+        pickup->setDead();
+        return true;
+    }
+    return false;
+}
+
+void StudentWorld::frackManFoundItem(Pickup *pickup) {
+    switch (pickup->getName()) {
+        case Actor::barrel:
+            m_barrelsLeft--;
+            increaseScore(1000);
+            playSound(SOUND_FOUND_OIL);
+            break;
+        case Actor::gold:
+            m_player->incNuggets();
+            increaseScore(10);
+            playSound(SOUND_GOT_GOODIE);
+            break;
+        case Actor::sonarkit:
+            m_player->incSonars();
+            increaseScore(75);
+            playSound(SOUND_GOT_GOODIE);
+            break;
+        case Actor::waterpool:
+            m_player->refillSquirtGun();
+            break;
+        default:
+            break;
+    }
 }
 
 // ------------------------------------- //
@@ -316,30 +370,30 @@ bool StudentWorld::finishedLevel() {
 }
 
 int StudentWorld::barrelsLeft() {
-    int barrelCount = 0;
+//    int barrelCount = 0;
+//    
+//    vector<Actor*>::iterator it = m_actors.begin();
+//    while (it != m_actors.end()) {
+//        if ((*it) != nullptr && (*it)->isAlive() && (*it)->getName() == Actor::boulder) {
+//            barrelCount++;
+//        }
+//        it++;
+//    }
     
-    vector<Actor*>::iterator it = m_actors.begin();
-    while (it != m_actors.end()) {
-        if ((*it) != nullptr && (*it)->isAlive() && (*it)->getName() == Actor::boulder) {
-            barrelCount++;
-        }
-        it++;
-    }
-    
-    return barrelCount;
+    return m_barrelsLeft;
 }
 
 string StudentWorld::formatDisplayText(int score, int level, int lives, int health, int squirts, int gold, int sonar, int barrelsRemaining) {
     string text;
     
-    string scoreText = "Scr: " + std::string(6 - to_string(score).length(), '0') + to_string(score) + "  ";
-    string levelText = "Lvl: " + std::string(2 - to_string(level).length(), ' ') + to_string(level) + "  ";
+    string scoreText = "Scr: " + string(6 - to_string(score).length(), '0') + to_string(score) + "  ";
+    string levelText = "Lvl: " + string(2 - to_string(level).length(), ' ') + to_string(level) + "  ";
     string livesText = "Lives: " + to_string(lives) + "  ";
-    string healthText = "Hlth: " + std::string(3 - to_string(health*10).length(), ' ') + to_string(health*10) + "%  ";
-    string squirtsText = "Wtr: " + std::string(2 - to_string(squirts).length(), ' ') + to_string(squirts) + "  ";
-    string goldText = "Gld: " + std::string(2 - to_string(gold).length(), ' ') + to_string(gold) + "  ";
-    string sonarText = "Sonar: " + std::string(2 - to_string(sonar).length(), ' ') + to_string(sonar) + "  ";
-    string barrelsText = "Oil Left: " + std::string(2 - to_string(barrelsRemaining).length(), ' ') + to_string(barrelsRemaining);
+    string healthText = "Hlth: " + string(3 - to_string(health*10).length(), ' ') + to_string(health*10) + "%  ";
+    string squirtsText = "Wtr: " + string(2 - to_string(squirts).length(), ' ') + to_string(squirts) + "  ";
+    string goldText = "Gld: " + string(2 - to_string(gold).length(), ' ') + to_string(gold) + "  ";
+    string sonarText = "Sonar: " + string(2 - to_string(sonar).length(), ' ') + to_string(sonar) + "  ";
+    string barrelsText = "Oil Left: " + string(2 - to_string(barrelsRemaining).length(), ' ') + to_string(barrelsRemaining);
     
     text = scoreText + levelText + livesText + healthText + squirtsText + goldText + sonarText + barrelsText;
     return text;
@@ -360,8 +414,8 @@ bool StudentWorld::isRadiusClear(int x, int y) {
     vector<Actor*>::iterator it = m_actors.begin();
     
     while (it != m_actors.end()) {
-        double radius = distance(x, y, (*it)->getX(), (*it)->getY());
-        if (radius <= MAX_RADIUS)       // found something in radius
+        double rad = radius(x, y, (*it)->getX(), (*it)->getY());
+        if (rad <= MAX_RADIUS)       // found something in radius
             return false;
         
         it++;
