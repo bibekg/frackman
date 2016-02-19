@@ -16,6 +16,10 @@ StudentWorld::~StudentWorld() {
             delete m_dirt[x][y];
 }
 
+// --------------------------------------- //
+// --------- MAIN GAME FUNCTIONS --------- //
+// --------------------------------------- //
+
 int StudentWorld::init() {
     
     int currentLevel = getLevel();
@@ -42,7 +46,8 @@ int StudentWorld::init() {
 //        int randY = randInt(20, 57);
 
         int randX = randInt(5, 8);
-        int randY = randInt(20, 57);if (isRadiusClear(randX, randY) && canPlacePickupHere(randX, randY)) {
+        int randY = randInt(20, 57);
+        if (isRadiusClear(randX, randY) && canPlacePickupHere(randX, randY)) {
             m_actors.push_back(new Boulder(randX, randY, this));
             
             // Remove dirt behind this boulder
@@ -143,6 +148,10 @@ void StudentWorld::cleanUp() {
     }
 }
 
+// ------------------------------------- //
+// --------- GENERAL FUNCTIONS --------- //
+// ------------------------------------- //
+
 Actor::Name StudentWorld::whatIsHere(int x, int y) {
     
     if (m_player->getX() == x && m_player->getY() == y)
@@ -161,9 +170,119 @@ Actor::Name StudentWorld::whatIsHere(int x, int y) {
     return Actor::nothing;
 }
 
-bool StudentWorld::projectileWillCrash(int x, int y) {
-    Actor::Name item = whatIsHere(x, y);
-    return (item == Actor::boulder || item == Actor::dirt);
+Actor::Name StudentWorld::whatIsBlockingPath(int x, int y, GraphObject::Direction dir) {
+    
+    vector<Actor*>::iterator it = m_actors.begin();
+    
+    while (it != m_actors.end()) {
+        if ((*it)->getName() == Actor::boulder) {
+            switch (dir) {
+                case GraphObject::left:
+                    if (x == 0 )
+                        return Actor::wall;
+                    if (isBoulderHere(x - 1, y))
+                        return Actor::boulder;
+                    break;
+                case GraphObject::up:
+                    if (y == 60)
+                        return Actor::wall;
+                    if (isBoulderHere(x, y + 1))
+                        return Actor::boulder;
+                    break;
+                case GraphObject::right:
+                    if (x == 60)
+                        return Actor::wall;
+                    if(isBoulderHere(x + 1, y))
+                        return Actor::boulder;
+                    break;
+                case GraphObject::down:
+                    if (y == 0)
+                        return Actor::wall;
+                    if(isBoulderHere(x, y - 1))
+                        return Actor::boulder;
+                    break;
+                case GraphObject::none:
+                    break;
+            }
+        }
+        it++;
+    }
+    
+    // Obstacle in path not found
+    return Actor::nothing;
+}
+
+// ---------------------------- //
+// --------- FRACKMAN --------- //
+// ---------------------------- //
+
+bool StudentWorld::isPlayerOnDirt() {
+    int playerX = m_player->getX();
+    int playerY = m_player->getY();
+    bool dug = false;
+    for (int x = playerX; x < playerX + 4; x++)
+        for (int y = playerY; y < playerY + 4; y++)
+            if (isThereDirt(x, y)) {
+                destroyDirt(x, y);
+                dug = true;
+            }
+    return dug;
+}
+
+void StudentWorld::movePlayer() {
+    int ch;
+    if (getKey(ch) == true) {
+        int pX = m_player->getX();
+        int pY = m_player->getY();
+        GraphObject::Direction dir = m_player->getDirection();
+        switch (ch) {
+            case KEY_PRESS_LEFT:
+                if (dir != GraphObject::left)
+                    m_player->setDirection(GraphObject::left);
+                else if (whatIsBlockingPath(pX, pY, dir) == Actor::nothing)
+                    m_player->moveTo(pX - 1, pY);
+                else if (whatIsBlockingPath(pX, pY, dir) == Actor::wall)
+                    m_player->moveTo(pX, pY);
+                break;
+            case KEY_PRESS_UP:
+                if (dir != GraphObject::up)
+                    m_player->setDirection(GraphObject::up);
+                else if (whatIsBlockingPath(pX, pY, dir) == Actor::nothing)
+                    m_player->moveTo(pX, pY + 1);
+                else if (whatIsBlockingPath(pX, pY, dir) == Actor::wall)
+                    m_player->moveTo(pX, pY);
+                break;
+            case KEY_PRESS_RIGHT:
+                if (dir != GraphObject::right)
+                    m_player->setDirection(GraphObject::right);
+                else if (whatIsBlockingPath(pX, pY, dir) == Actor::nothing)
+                    m_player->moveTo(pX + 1, pY);
+                else if (whatIsBlockingPath(pX, pY, dir) == Actor::wall)
+                    m_player->moveTo(pX, pY);
+                break;
+            case KEY_PRESS_DOWN:
+                if (dir != GraphObject::down)
+                    m_player->setDirection(GraphObject::down);
+                else if (whatIsBlockingPath(pX, pY, dir) == Actor::nothing)
+                    m_player->moveTo(pX, pY - 1);
+                else if (whatIsBlockingPath(pX, pY, dir) == Actor::wall)
+                    m_player->moveTo(pX, pY);
+                break;
+            case KEY_PRESS_ESCAPE:
+                m_player->getAnnoyed(10);
+                m_player->setDead();
+                break;
+            case KEY_PRESS_SPACE:
+                if (m_player->squirts() > 0) {
+                    spawnSquirt();
+                    m_player->decSquirts();
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
 }
 
 // ------------------------ //
@@ -185,6 +304,26 @@ void StudentWorld::destroyDirt(int x, int y) {
 // --------------------------- //
 // --------- BOULDER --------- //
 // --------------------------- //
+
+bool StudentWorld::willBoulderCrash(int x, int y) {
+    
+    // Will crash into boulder
+    for (int i = x - 3; i < x + 7; i++) {
+        for (int j = y - 4; j < y; j++) {
+            if (whatIsHere(i, j) == Actor::boulder)
+                return true;
+        }
+    }
+    
+    // Will crash into dirt
+    for (int i = 0; i < 4; i++) {
+        if (whatIsHere(x + i, y) == Actor::dirt) {
+            return true;
+        }
+    }
+    
+    return false;
+}
 
 bool StudentWorld::crushLiveActorBelow(int x, int y) {
     vector<Actor*>::iterator it = m_actors.begin();
@@ -235,10 +374,7 @@ void StudentWorld::spawnSquirt() {
     int x = m_player->getX(), y = m_player->getY();
     
     playSound(SOUND_PLAYER_SQUIRT);
-    
-    // up and right failing
-    
-    
+
     switch (m_player->getDirection()) {
         case Actor::up:
             if (canSquirtHere(x, y + 4))
@@ -285,6 +421,11 @@ bool StudentWorld::canSquirtHere(int x, int y) {
     }
     
     return canSquirt;
+}
+
+bool StudentWorld::willSquirtCrash(int x, int y) {
+    Actor::Name item = whatIsHere(x, y);
+    return (item == Actor::boulder || item == Actor::dirt);
 }
 
 // --------------------------- //
@@ -334,8 +475,14 @@ void StudentWorld::frackManFoundItem(Pickup *pickup) {
 }
 
 // ------------------------------------- //
+// ------------------------------------- //
 // --------- PRIVATE FUNCTIONS --------- //
 // ------------------------------------- //
+// ------------------------------------- //
+
+// -------------------------------- //
+// --------- HOUSEKEEPING --------- //
+// -------------------------------- //
 
 void StudentWorld::setDisplayText() {
     int score = getScore();
@@ -399,8 +546,34 @@ string StudentWorld::formatDisplayText(int score, int level, int lives, int heal
     return text;
 }
 
+// ----------------------------------- //
+// --------- WORLD AWARENESS --------- //
+// ----------------------------------- //
+
 bool StudentWorld::isMineShaftRegion(int x, int y) {
     if ((x >= 30 && x <= 33) && (y >= 4 && y <= 59)) return true;
+    return false;
+}
+
+bool StudentWorld::isBoulderHere(int x, int y) {
+    vector<Actor*>::iterator it = m_actors.begin();
+    
+    // For each boulder
+    while (it != m_actors.end()) {
+        if ((*it)->getName() == Actor::boulder) {
+            int bX = (*it)->getX();
+            int bY = (*it)->getY();
+            
+            // Check if the boulders 4x4 box overlaps the target's 4x4 box
+            for (int a = bX; a < bX + 4; a++)
+                for (int b = bY; b < bY + 4; b++)
+                    for (int i = x; i < x + 4; i++)
+                        for (int j = y; j < y + 4; j++)
+                            if (a == i && b == j)
+                                return true;
+        }
+        it++;
+    }
     return false;
 }
 
@@ -425,6 +598,10 @@ bool StudentWorld::isRadiusClear(int x, int y) {
     
     
 }
+
+// ----------------------------- //
+// --------- AUXILIARY --------- //
+// ----------------------------- //
 
 int StudentWorld::randInt(int min, int max) {
     return rand() % (max-min) + min;

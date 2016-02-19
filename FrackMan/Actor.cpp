@@ -83,70 +83,24 @@ void TemporaryPickup::doSomething() {
 // --------- FRACKMAN --------- //
 // ---------------------------- //
 
+FrackMan::FrackMan(StudentWorld* studentWorld)
+: LiveActor(IID_PLAYER, 30, 60, studentWorld, right) {
+    m_squirts = 5;
+    m_sonars = 1;
+    m_nuggets = 0;
+    setName(frackman);
+}
+
 void FrackMan::doSomething() {
     if (health() == 0) return;  // FrackMan is dead!
+    StudentWorld* world = getWorld();
     
     // Check if overlapping dirt
-    StudentWorld* world = getWorld();
-    int playerX = getX();
-    int playerY = getY();
-    bool dug = false;
-    for (int x = playerX; x < playerX + 4; x++)
-        for (int y = playerY; y < playerY + 4; y++)
-            if (world->isThereDirt(x, y)) {
-                world->destroyDirt(x, y);
-                dug = true;
-            }
-    if (dug) world->playSound(SOUND_DIG);
+    if (world->isPlayerOnDirt())
+        world->playSound(SOUND_DIG);
     
     // Get user action
-    int ch; if (getWorld()->getKey(ch) == true) {
-        switch (ch) {
-            case KEY_PRESS_LEFT:
-                if (getDirection() != left)
-                    setDirection(left);
-                else if (getX() != 0)
-                    moveTo(getX() - 1, getY());
-                else
-                    moveTo(getX(), getY());
-                break;
-            case KEY_PRESS_UP:
-                if (getDirection() != up)
-                    setDirection(up);
-                else if (getY() != 60)
-                    moveTo(getX(), getY() + 1);
-                else
-                    moveTo(getX(), getY());
-                break;
-            case KEY_PRESS_RIGHT:
-                if (getDirection() != right)
-                    setDirection(right);
-                else if (getX() != 60)
-                    moveTo(getX() + 1, getY());
-                else
-                    moveTo(getX(), getY());
-                break;
-            case KEY_PRESS_DOWN:
-                if (getDirection() != down)
-                    setDirection(down);
-                else if (getY() != 0)
-                    moveTo(getX(), getY() - 1);
-                else
-                    moveTo(getX(), getY());
-                break;
-            case KEY_PRESS_ESCAPE:
-                getAnnoyed(10);
-                setDead();
-            case KEY_PRESS_SPACE:
-                if (squirts() > 0) {
-                    getWorld()->spawnSquirt();
-                    m_squirts--;
-                }
-                break;
-            default:
-                break;
-        }
-    }
+    world->movePlayer();
 }
 
 void FrackMan::getAnnoyed(int amt) {
@@ -156,6 +110,15 @@ void FrackMan::getAnnoyed(int amt) {
         setDead();
         getWorld()->playSound(SOUND_PLAYER_GIVE_UP);
     }
+}
+
+// ------------------------ //
+// --------- DIRT --------- //
+// ------------------------ //
+
+Dirt::Dirt(int startX, int startY, StudentWorld* studentWorld)
+: Actor(IID_DIRT, startX, startY, studentWorld, right, 0.25, 3) {
+    setName(dirt);
 }
 
 // ----------------------------- //
@@ -175,7 +138,14 @@ void Protestor::getAnnoyed(int amt) {
 // --------- BOULDER --------- //
 // --------------------------- //
 
-// !!! Boulder needs to check radius for protestors/FrackMan
+Boulder::Boulder(int startX, int startY, StudentWorld* studentWorld)
+: Actor(IID_BOULDER, startX, startY, studentWorld, down, 1.0, 1) {
+    setState(stable);
+    setAlive();
+    ticksWaited = 0;
+    setVisible(true);
+    setName(boulder);
+}
 
 void Boulder::doSomething() {
     if (!isAlive()) return;
@@ -225,12 +195,10 @@ bool Boulder::crashed() {
     
     // Hit bottom of oil field
     if (getY() == 0) return true;
-    
-    for (int i = 0; i < 4; i++) {
-        
-        if (getWorld()->projectileWillCrash(getX() + i, getY() - 1))
-            return true;
-    }
+
+    // Crashed into another boulder or dirt
+    if (getWorld()->willBoulderCrash(getX(), getY()))
+        return true;
     
     return false;
 }
@@ -238,6 +206,12 @@ bool Boulder::crashed() {
 // -------------------------- //
 // --------- SQUIRT --------- //
 // -------------------------- //
+
+Squirt::Squirt(int startX, int startY, Direction dir, StudentWorld* studentWorld)
+: Actor(IID_WATER_SPURT, startX, startY, studentWorld, dir, 1.0, 1) {
+    m_remainingDistance = 4;
+    setName(squirt);
+}
 
 void Squirt::doSomething() {
     
@@ -256,25 +230,25 @@ void Squirt::doSomething() {
     // Move squirt unless it will crash
     switch (getDirection()) {
         case GraphObject::up:
-            if (!world->projectileWillCrash(getX(), getY() + 4))
+            if (!world->willSquirtCrash(getX(), getY() + 4))
                 moveTo(getX(), getY() + 1);
             else
                 setDead();
             break;
         case GraphObject::right:
-            if (!world->projectileWillCrash(getX() + 4, getY()))
+            if (!world->willSquirtCrash(getX() + 4, getY()))
                 moveTo(getX() + 1, getY());
             else
                 setDead();
             break;
         case GraphObject::down:
-            if (!world->projectileWillCrash(getX(), getY() - 1))
+            if (!world->willSquirtCrash(getX(), getY() - 1))
                 moveTo(getX(), getY() - 1);
             else
                 setDead();
             break;
         case GraphObject::left:
-            if (!world->projectileWillCrash(getX() - 1, getY()))
+            if (!world->willSquirtCrash(getX() - 1, getY()))
                 moveTo(getX() - 1, getY());
             else
                 setDead();

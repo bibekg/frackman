@@ -21,7 +21,7 @@ class StudentWorld;
 class Actor: public GraphObject {
 public:
     
-    enum Name { dirt, boulder, squirt, frackman, protestor, hardcore, barrel, gold, sonarkit, waterpool, nothing };
+    enum Name { dirt, boulder, squirt, frackman, protestor, hardcore, barrel, gold, sonarkit, waterpool, wall, nothing};
     
     // constructor
     Actor(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir = right, double size = 0, unsigned int depth = 0);
@@ -100,11 +100,7 @@ private:
 
 class Dirt: public Actor {
 public:
-    Dirt(int startX, int startY, StudentWorld* studentWorld)
-    : Actor(IID_DIRT, startX, startY, studentWorld, right, 0.25, 3)
-    {
-        setName(dirt);
-    }
+    Dirt(int startX, int startY, StudentWorld* studentWorld);
     
     virtual ~Dirt() {}
     void doSomething() {}
@@ -115,21 +111,11 @@ public:
     
     enum State { stable, waiting, falling };
     
-    Boulder(int startX, int startY, StudentWorld* studentWorld)
-    : Actor(IID_BOULDER, startX, startY, studentWorld, down, 1.0, 1)
-    {
-        setState(stable);
-        setAlive();
-        ticksWaited = 0;
-        setVisible(true);
-        setName(boulder);
-    }
+    Boulder(int startX, int startY, StudentWorld* studentWorld);
     
     virtual ~Boulder() {}
     
     virtual void doSomething();
-
-protected:
     
     void setState(State state) { m_state = state; }
     
@@ -139,16 +125,12 @@ private:
     
     State m_state;
     int ticksWaited;
+    
 };
 
 class Squirt: public Actor {
 public:
-    Squirt(int startX, int startY, Direction dir, StudentWorld* studentWorld)
-    : Actor(IID_WATER_SPURT, startX, startY, studentWorld, dir, 1.0, 1)
-    {
-        m_remainingDistance = 4;
-        setName(squirt);
-    }
+    Squirt(int startX, int startY, Direction dir, StudentWorld* studentWorld);
     
     virtual ~Squirt() {}
     
@@ -164,13 +146,7 @@ private:
 
 class FrackMan: public LiveActor {
 public:
-    FrackMan(StudentWorld* studentWorld)
-    : LiveActor(IID_PLAYER, 30, 60, studentWorld, right) {
-        m_squirts = 5;
-        m_sonars = 1;
-        m_nuggets = 0;
-        setName(frackman);
-    }
+    FrackMan(StudentWorld* studentWorld);
     
     virtual ~FrackMan(){}
     
@@ -185,10 +161,11 @@ public:
     
     // Setters
     void incSonars() { m_sonars++; }
-//    void decSonars() { m_sonars--; }              // MAY NOT NEED
+    void decSonars() { m_sonars--; }              // MAY NOT NEED
     void incNuggets() { m_nuggets++; }
-//    void decNuggets() { m_nuggets--; }
+    void decNuggets() { m_nuggets--; }
     void refillSquirtGun() { m_squirts += 5; }
+    void decSquirts() { m_squirts--; }
     
 private:
     int m_squirts;
