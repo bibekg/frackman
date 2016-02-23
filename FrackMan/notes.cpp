@@ -21,23 +21,6 @@
 // • make gold pickupable by protestors
 
 
+// I can run through the protesters without getting annoyed since they rest for 3 ticks in the first level
 
-
-
-//enum Colors { red, blue, green };
-//
-//Colors m_color;
-//
-//
-//m_color = red;
-//
-//
-//void setType(Colors color) {
-//    m_color = color;
-//}
-
-
-
-
-// BUGS:
-// • boulder falling on boulder
+// I made a squirt go 4 spaces after its spawn for a "travel distance" of 4

@@ -58,7 +58,8 @@ class SoundFXController
 	void playClip(std::string soundFile)
 	{
 		std::system(("/usr/bin/afplay \"" + soundFile + "\" &").c_str());
-	}
+//        std::cout << "play " << soundFile << std::endl;
+    }
 	
 	void abortClip()
 	{

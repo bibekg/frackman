@@ -6,11 +6,13 @@
 
 using namespace std;
 
-// Students:  Add code to this file (if you wish), Actor.h, StudentWorld.h, and StudentWorld.cpp
-
 double radius(int x1, int y1, int x2, int y2) {
     double distance = pow(pow((x1-x2), 2) + pow((y1-y2), 2), 0.5);
     return distance;
+}
+
+int randInt(int min, int max) {
+    return rand() % (max-min) + min;
 }
 
 // ------------------------- //
@@ -35,14 +37,6 @@ LiveActor::LiveActor(int imageID, int startX, int startY, StudentWorld* studentW
     m_health = health;
 }
 
-void LiveActor::getAnnoyed(int amt) {
-    decHealth(amt);
-    
-    if (health() <= 0) {
-        setDead();
-    }
-}
-
 // -------------------------- //
 // --------- PICKUP --------- //
 // -------------------------- //
@@ -54,12 +48,12 @@ Pickup::Pickup(int imageID, int startX, int startY, StudentWorld* studentWorld, 
 
 void Pickup::makePickupVisible(bool shouldDisplay) {
     m_isVisible = shouldDisplay;
-    //    setVisible(shouldDisplay);    // UNCOMMENT THIS TO HIDE PICKUPS
+    setVisible(shouldDisplay);    // UNCOMMENT THIS TO HIDE PICKUPS
 }
 
-// ----------------------------------- //
-// --------- TEMPORARYPICKUP --------- //
-// ----------------------------------- //
+// ------------------------------------ //
+// --------- TEMPORARY PICKUP --------- //
+// ------------------------------------ //
 
 TemporaryPickup::TemporaryPickup(int imageID, int startX, int startY, StudentWorld* studentWorld, int timeLeft)
 : Pickup(imageID, startX, startY, studentWorld) {
@@ -84,7 +78,7 @@ void TemporaryPickup::doSomething() {
 // ---------------------------- //
 
 FrackMan::FrackMan(StudentWorld* studentWorld)
-: LiveActor(IID_PLAYER, 30, 60, studentWorld, right) {
+: LiveActor(IID_PLAYER, 30, 60, studentWorld, 10, right) {
     m_squirts = 5;
     m_sonars = 1;
     m_nuggets = 0;
@@ -100,16 +94,18 @@ void FrackMan::doSomething() {
         world->playSound(SOUND_DIG);
     
     // Get user action
-    world->movePlayer();
+    world->getPlayerAction();
 }
 
-void FrackMan::getAnnoyed(int amt) {
+bool FrackMan::getAnnoyed(int amt) {
     decHealth(amt);
     
     if (health() <= 0) {
         setDead();
         getWorld()->playSound(SOUND_PLAYER_GIVE_UP);
+        return true;
     }
+    return false;
 }
 
 // ------------------------ //
@@ -122,16 +118,135 @@ Dirt::Dirt(int startX, int startY, StudentWorld* studentWorld)
 }
 
 // ----------------------------- //
-// --------- PROTESTOR --------- //
+// --------- Protester --------- //
 // ----------------------------- //
 
-void Protestor::getAnnoyed(int amt) {
+Protester::Protester(int imageID, StudentWorld* studentWorld, int health)
+: LiveActor(imageID, 60, 60, studentWorld, health) {
+    m_state = normal;
+    resetRestTicks();
+    m_ticksSinceLastShout = 15;
+    resetTurnTicks();
+    reRandomizeMoveSquares();
+    m_defaultTicksToWait = max(0, 3 - int(studentWorld->getLevel())/4);
+    m_stunnedTickstoWait = max(50, 100 - int(studentWorld->getLevel()) * 10);
+    setName(protester);
+    
+}
+
+void Protester::reRandomizeMoveSquares() {
+    m_numSquaresToMoveInCurrDir = randInt(8, 61);
+}
+
+void Protester::getBribed() {
+    getWorld()->playSound(SOUND_PROTESTER_FOUND_GOLD);
+    getWorld()->increaseScore(25);
+    m_leaving = true;
+    m_state = leaving;
+}
+
+void Protester::doSomething() {
+    
+    if (!isAlive())
+        return;
+    
+    // In resting state
+    else if (m_state == resting) {
+        
+        // ticksToWait was set to 0 to expediate leaving process
+        // re-set waiting ticks so protester doesn't speedwalk away after dying
+        if (m_leaving) {
+            m_defaultTicksToWait = max(0, 3 - int(getWorld()->getLevel())/4);
+        }
+        
+        if (m_ticksRested >= m_defaultTicksToWait) {
+            resetRestTicks();
+            m_ticksSinceLastTurn++;
+            m_ticksSinceLastShout++;
+            if (m_leaving)
+                m_state = leaving;
+            else
+                m_state = normal;
+        } else {
+            m_ticksRested++;
+            return;
+        }
+    }
+    
+    // In leaving state
+    if (m_state == leaving) {
+        if (getX() == 60 && getY() == 60) {
+            setDead();
+        } else {
+            getWorld()->protesterLeaveMap(this);
+            setToRest();
+        }
+        return;
+    }
+    
+    // In stunned state
+    if (m_state == stunned) {
+        if (m_ticksRested >= m_stunnedTickstoWait) {
+            resetRestTicks();
+            m_ticksSinceLastTurn++;
+            m_ticksSinceLastShout++;
+            m_state = normal;
+        } else {
+            m_ticksRested++;
+            return;
+        }
+    }
+    
+    // In normal state
+    if (m_state == normal) {
+        if (getWorld()->shoutIfPossible(this)) {
+            m_state = stunned;
+            resetRestTicks();
+            return;
+        }
+        
+        else if (isHardcore())
+            getWorld()->followFrackMan(this);
+        
+        else if (getWorld()->stepTowardFrackMan(this))
+            return;
+        
+        m_numSquaresToMoveInCurrDir--;
+        
+        if (m_numSquaresToMoveInCurrDir <= 0) {
+            setDirection(getWorld()->pickNewDirection(this));
+            reRandomizeMoveSquares();
+        }
+        
+        else if (getWorld()->movePerpendicularly(this))
+                resetTurnTicks();
+        
+        // Move one step in current direction
+        // If blocked, set numSquaresToMove to 0
+        if(!getWorld()->takeAStep(this))
+            resetNumSquaresToMove();
+    }
+    m_state = resting;
+}
+
+bool Protester::getAnnoyed(int amt) {
     decHealth(amt);
+    m_state = stunned;
     
     if (health() <= 0) {
-        setDead();
+        m_leaving = true;
+        m_state = leaving;
+        m_defaultTicksToWait = 0;
+        m_stunnedTickstoWait = 0;
         getWorld()->playSound(SOUND_PROTESTER_GIVE_UP);
+        return true;
     }
+    return false;
+}
+
+HardCoreProtester::HardCoreProtester(StudentWorld* studentWorld)
+: Protester(IID_HARD_CORE_PROTESTER, studentWorld, 20) {
+    
 }
 
 // --------------------------- //
@@ -142,7 +257,7 @@ Boulder::Boulder(int startX, int startY, StudentWorld* studentWorld)
 : Actor(IID_BOULDER, startX, startY, studentWorld, down, 1.0, 1) {
     setState(stable);
     setAlive();
-    ticksWaited = 0;
+    m_ticksWaited = 0;
     setVisible(true);
     setName(boulder);
 }
@@ -152,42 +267,20 @@ void Boulder::doSomething() {
     
     // STABLE STATE
     else if (m_state == stable) {
-        int rockX = getX();
-        int rockY = getY();
-        bool dirtBelow = false;
         
-        // Check for dirt beneath boulder
-        for (int x = rockX; x < rockX + 4; x++) {
-            if (getWorld()->isThereDirt(x, rockY - 1))
-                dirtBelow = true;
-        }
-        
-        // No dirt below, enter waiting stage
-        if (!dirtBelow)
+        // If boulder will fall now, enter waiting stage
+        if (getWorld()->willBoulderFall(this))
             setState(waiting);
     }
     
     // WAITING STATE: Wait for 30 ticks to transition to falling
-    else if (m_state == waiting) {
-        if (ticksWaited == 30) {
-            setState(falling);
-            getWorld()->playSound(SOUND_FALLING_ROCK);
-        }
-        else
-            ticksWaited++;
-    }
+    else if (m_state == waiting)
+        getWorld()->dropBoulderOrTick(this);
     
     // FALLING STATE
     else if (m_state == falling) {
-        
-        // if within radius of 3 to protestors or FrackMan, cause 100 points of annoyance
-        getWorld()->crushLiveActorBelow(getX(), getY());
-        
-        if (crashed()) {
-            setDead();
-        } else {
-            moveTo(getX(), getY() - 1);
-        }
+        getWorld()->crushLiveActorBelow(this);
+        getWorld()->moveBoulder(this);
     }
 }
 
@@ -195,9 +288,9 @@ bool Boulder::crashed() {
     
     // Hit bottom of oil field
     if (getY() == 0) return true;
-
+    
     // Crashed into another boulder or dirt
-    if (getWorld()->willBoulderCrash(getX(), getY()))
+    if (getWorld()->willBoulderCrash(this))
         return true;
     
     return false;
@@ -217,8 +310,8 @@ void Squirt::doSomething() {
     
     StudentWorld* world = getWorld();
     
-    // If near protestor, kill it and remove squirt
-    if(world->squirtProtestors(getX(), getY()))
+    // If near Protester, kill it and remove squirt
+    if(world->squirtProtesters(this))
         setDead();
     
     // Squirt done moving, set it to dead
@@ -230,25 +323,25 @@ void Squirt::doSomething() {
     // Move squirt unless it will crash
     switch (getDirection()) {
         case GraphObject::up:
-            if (!world->willSquirtCrash(getX(), getY() + 4))
+            if (!world->isSpotBlocked(getX(), getY() + 4))
                 moveTo(getX(), getY() + 1);
             else
                 setDead();
             break;
         case GraphObject::right:
-            if (!world->willSquirtCrash(getX() + 4, getY()))
+            if (!world->isSpotBlocked(getX() + 4, getY()))
                 moveTo(getX() + 1, getY());
             else
                 setDead();
             break;
         case GraphObject::down:
-            if (!world->willSquirtCrash(getX(), getY() - 1))
+            if (!world->isSpotBlocked(getX(), getY() - 1))
                 moveTo(getX(), getY() - 1);
             else
                 setDead();
             break;
         case GraphObject::left:
-            if (!world->willSquirtCrash(getX() - 1, getY()))
+            if (!world->isSpotBlocked(getX() - 1, getY()))
                 moveTo(getX() - 1, getY());
             else
                 setDead();
@@ -271,7 +364,7 @@ void Barrel::doSomething() {
     if (!isAlive())
         return;
     
-    if (getWorld()->makeVisibleIfNearby(this))
+    if (getWorld()->makeVisibleIfInRadius(this, 4))
         return;
     
     StudentWorld* world = getWorld();
@@ -296,15 +389,19 @@ void Gold::doSomething() {
     if (!isAlive())
         setDead();
     
-    if (getWorld()->makeVisibleIfNearby(this))
+    if (getWorld()->makeVisibleIfInRadius(this, 4))
         return;
     
     StudentWorld* world = getWorld();
     if (m_whoCanPickUp == frackman && world->pickupPickupIfNearby(this))
         world->frackManFoundItem(this);
     
-    else if (m_whoCanPickUp == protestor) {
-        // Protestor needs to pick up gold
+    else if (m_whoCanPickUp == protester) {
+        // Protester needs to pick up gold
+        if(getWorld()->getPickedUpByProtester(this)) {
+            setDead();
+            return;
+        }
     }
     
     // Remove gold if it has waited 100 ticks
@@ -321,8 +418,8 @@ void Gold::doSomething() {
 // --------- SONARKIT --------- //
 // ---------------------------- //
 
-SonarKit::SonarKit(int startX, int startY, int frackManCanPickUp, StudentWorld* studentWorld)
-: TemporaryPickup(IID_SONAR, startX, startY, studentWorld, max(100, 300 - 10 * int(studentWorld->getLevel()))) {
+SonarKit::SonarKit(StudentWorld* studentWorld)
+: TemporaryPickup(IID_SONAR, 0, 60, studentWorld, max(100, 300 - 10 * int(studentWorld->getLevel()))) {
     setName(sonarkit);
     setVisible(true);
 }
@@ -331,17 +428,8 @@ SonarKit::SonarKit(int startX, int startY, int frackManCanPickUp, StudentWorld* 
 // --------- WATER POOL --------- //
 // ------------------------------ //
 
-WaterPool::WaterPool(int startX, int startY, int frackManCanPickUp, StudentWorld* studentWorld)
-: TemporaryPickup(IID_SONAR, startX, startY, studentWorld, min(100, 300 - 10 * int(studentWorld->getLevel()))) {
+WaterPool::WaterPool(int startX, int startY, StudentWorld* studentWorld)
+: TemporaryPickup(IID_WATER_POOL, startX, startY, studentWorld, min(100, 300 - 10 * int(studentWorld->getLevel()))) {
     setName(waterpool);
     setVisible(true);
 }
-
-
-
-
-
-
-
-
-

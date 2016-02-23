@@ -27,26 +27,46 @@ public:
     Actor::Name whatIsHere(int x, int y);
     Actor::Name whatIsBlockingPath(int x, int y, GraphObject::Direction dir);
     
+    bool isSpotBlocked(int x, int y);
+    
     // Frackman functions
     bool isPlayerOnDirt();
-    void movePlayer();
+    void getPlayerAction();
+    void dropGold();
+    void useSonar();
+    
+    // Protester functions
+    void markMap(int x, int y, int val);
+    void protesterLeaveMap(Protester* protester);
+    bool shoutIfPossible(Protester* protester);
+    GraphObject::Direction directionToFrackMan(Protester* protester);
+    bool stepTowardFrackMan(Protester* protester);
+    GraphObject::Direction pickNewDirection(Protester* protester);
+    bool movePerpendicularly(Protester* protester);
+    bool takeAStep(Protester* protester);
+    bool followFrackMan(Protester* protester);
+    void annoyFrackMan();
     
     // Dirt functions
     bool isThereDirt(int x, int y);
     void destroyDirt(int x, int y);
     
     // Boulder functions
-    bool willBoulderCrash(int x, int y);
-    bool crushLiveActorBelow(int x, int y);
+    bool willBoulderFall(Boulder* boulder);
+    bool dropBoulderOrTick(Boulder * boulder);
+    bool willBoulderCrash(Boulder* boulder);
+    bool crushLiveActorBelow(Boulder* boulder);
+    bool moveBoulder(Boulder* boulder);
     
     // Squirt functions
-    bool squirtProtestors(int x, int y);
+    bool squirtProtesters(Squirt* squirt);
     void spawnSquirt();
-    bool canSquirtHere(int x, int y);
-    bool willSquirtCrash(int x, int y);
+    
+    // Gold functions
+    bool getPickedUpByProtester(Gold* gold);
     
     // Pickup functions
-    bool makeVisibleIfNearby(Pickup* pickup);
+    bool makeVisibleIfInRadius(Pickup* pickup, int rad);
     bool pickupPickupIfNearby(Pickup* pickup);
     void frackManFoundItem(Pickup* pickup);
     
@@ -63,16 +83,22 @@ private:
     bool isMineShaftRegion(int x, int y);
     bool isBoulderHere(int x, int y);
     bool canPlacePickupHere(int x, int y);
-    bool isRadiusClear(int x, int y);
+    bool isRadiusClear(int x, int y, int r);
+    bool canPlaceWaterHere(int x, int y);
+    int protesterCount();
+    void getShortestRoute(int &x, int &y, GraphObject::Direction &dir);
     
     // Auxiliary Functions
-    int randInt(int min, int max);  // [min, max)
     
     // Private Member Variables
     FrackMan* m_player;
     Dirt* m_dirt[64][64];
+    int m_exitMap[64][64];
     std::vector<Actor*> m_actors;
     int m_barrelsLeft;
+    int m_TICKSBETWEENSPAWNS;
+    int m_ticksSinceProtesterSpawned;
+    int m_maxProtesters;
 };
 
 #endif // STUDENTWORLD_H_

@@ -3,12 +3,14 @@
 
 #include "GraphObject.h"
 #include "GameConstants.h"
+#include <queue>
 
 // ------------------------------------ //
 // --------- GLOBAL FUNCTIONS --------- //
 // ------------------------------------ //
 
 double radius(int x1, int y1, int x2, int y2);
+int randInt(int min, int max);  // [min, max)
 
 // ------------------------------------ //
 
@@ -21,7 +23,7 @@ class StudentWorld;
 class Actor: public GraphObject {
 public:
     
-    enum Name { dirt, boulder, squirt, frackman, protestor, hardcore, barrel, gold, sonarkit, waterpool, wall, nothing};
+    enum Name { dirt, boulder, squirt, frackman, protester, hardcore, barrel, gold, sonarkit, waterpool, wall, nothing};
     
     // constructor
     Actor(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir = right, double size = 0, unsigned int depth = 0);
@@ -30,9 +32,10 @@ public:
     StudentWorld* getWorld();
     
     virtual bool canGetCrushed() { return false; }
+    virtual bool sonarMakesVisible() { return false; }
     
     virtual void doSomething() = 0;
-    virtual void getAnnoyed(int amt) {};
+    virtual bool getAnnoyed(int amt) {return false; }
     
     // Getters
     Name getName() { return m_name; }
@@ -54,7 +57,6 @@ public:
     LiveActor(int imageID, int startX, int startY, StudentWorld* studentWorld, int health, Direction dir = left, double size = 1, unsigned int depth = 0);
     virtual ~LiveActor() {}
     
-    virtual void getAnnoyed(int amt);
     virtual bool canGetCrushed() { return true; }
     
     int health() { return m_health; }
@@ -117,14 +119,15 @@ public:
     
     virtual void doSomething();
     
-    void setState(State state) { m_state = state; }
+    int ticksWaited() {return m_ticksWaited; }
+    void incTicks() { m_ticksWaited++; }
     
+    void setState(State state) { m_state = state; }
+    bool crashed();
 private:
     
-    bool crashed();
-    
     State m_state;
-    int ticksWaited;
+    int m_ticksWaited;
     
 };
 
@@ -152,7 +155,7 @@ public:
     
     virtual void doSomething();
     
-    virtual void getAnnoyed(int amt);
+    virtual bool getAnnoyed(int amt);
     
     // Getters
     int squirts() { return m_squirts; }
@@ -173,14 +176,64 @@ private:
     int m_nuggets;
 };
 
-class Protestor: public LiveActor {
+class Protester: public LiveActor {
 public:
-    void getAnnoyed(int amt);
     
+    Protester(int imageID, StudentWorld* studentWorld, int health = 5);
+    
+    virtual void doSomething();
+    bool getAnnoyed(int amt);
+    void planExit();
+    
+    // Setters
+    void setToRest() { m_state = resting; }
+    void resetShoutTicks() { m_ticksSinceLastShout = 0; }
+    void resetTurnTicks() { m_ticksSinceLastTurn = 0; }
+    void resetRestTicks() { m_ticksRested = 0; }
+    void resetNumSquaresToMove() { m_numSquaresToMoveInCurrDir = 0; }
+    void reRandomizeMoveSquares();
+    void getBribed();
+    
+    // Getters
+    int ticksSinceLastShout() { return m_ticksSinceLastShout; }
+    int ticksSinceLastTurn() { return m_ticksSinceLastTurn; }
+    
+    virtual bool isHardcore() { return false; }
+    
+private:
+    
+    enum State { normal, resting, leaving, stunned };
+    
+    struct Coord {
+    public:
+        Coord(int xx, int yy) : m_x(xx), m_y(yy) {}
+        int x() const { return m_x; }
+        int y() const { return m_y; }
+    private:
+        int m_x;
+        int m_y;
+    };
+    
+    std::queue<Coord*> m_exitPath;
+    
+    // Member variables
+    State m_state;
+    bool m_leaving;
+    int m_defaultTicksToWait;
+    int m_stunnedTickstoWait;
+    int m_ticksRested;
+    int m_ticksSinceLastShout;
+    int m_ticksSinceLastTurn;
+    int m_numSquaresToMoveInCurrDir;
 };
 
-class HardCoreProtestor: public Protestor {
+class HardCoreProtester: public Protester {
 public:
+    HardCoreProtester(StudentWorld* studentWorld);
+    
+    virtual bool isHardcore() { return true; }
+    
+private:
     
 };
 
@@ -193,17 +246,21 @@ public:
     Barrel(int startX, int startY, StudentWorld* studentWorld);
     
     virtual void doSomething();
+    
+    virtual bool sonarMakesVisible() { return true; }
 };
 
 class Gold: public Pickup {
 public:
     
-    enum PickupableBy {frackman, protestor};
+    enum PickupableBy {frackman, protester};
     enum TimeLimit {permanent, temporary};
     
     Gold(int startX, int startY, PickupableBy whoCanPickUp, TimeLimit timeLimit, StudentWorld* studentWorld);
     
     virtual void doSomething();
+    
+    virtual bool sonarMakesVisible() { return true; }
 private:
     PickupableBy m_whoCanPickUp;
     TimeLimit m_timeLimit;
@@ -212,12 +269,12 @@ private:
 
 class SonarKit: public TemporaryPickup {
 public:
-    SonarKit(int startX, int startY, int frackManCanPickUp, StudentWorld* studentWorld);
+    SonarKit(StudentWorld* studentWorld);
 };
 
 class WaterPool: public TemporaryPickup {
 public:
-    WaterPool(int startX, int startY, int frackManCanPickUp, StudentWorld* studentWorld);
+    WaterPool(int startX, int startY, StudentWorld* studentWorld);
 
 private:
 };
