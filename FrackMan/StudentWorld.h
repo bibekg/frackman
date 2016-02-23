@@ -10,6 +10,8 @@
 // Constants
 
 const int MAX_RADIUS = 6;
+const char DISCOVERED = 'X';
+const char OPEN = '.';
 
 class StudentWorld : public GameWorld {
 public:
@@ -36,7 +38,6 @@ public:
     void useSonar();
     
     // Protester functions
-    void markMap(int x, int y, int val);
     void protesterLeaveMap(Protester* protester);
     bool shoutIfPossible(Protester* protester);
     GraphObject::Direction directionToFrackMan(Protester* protester);
@@ -86,19 +87,46 @@ private:
     bool isRadiusClear(int x, int y, int r);
     bool canPlaceWaterHere(int x, int y);
     int protesterCount();
-    void getShortestRoute(int &x, int &y, GraphObject::Direction &dir);
+//    void getShortestRoute(int &x, int &y, GraphObject::Direction &dir);
+//    bool pathExists(int sr, int sc);
+    void markAsOpen(int x, int y);
+    GraphObject::Direction getProtesterDirectionToLeave(Protester* protester);
     
     // Auxiliary Functions
     
     // Private Member Variables
     FrackMan* m_player;
     Dirt* m_dirt[64][64];
+    char m_exitMaze[64][64];
     int m_exitMap[64][64];
     std::vector<Actor*> m_actors;
     int m_barrelsLeft;
     int m_TICKSBETWEENSPAWNS;
     int m_ticksSinceProtesterSpawned;
     int m_maxProtesters;
+    
+    struct Coord {
+        
+        Coord(int x, int y, int ptl, GraphObject::Direction dir)
+        : m_x(x), m_y(y), m_potential(ptl), m_dir(dir) {}
+        
+        int m_x;
+        int m_y;
+        int m_potential;
+        GraphObject::Direction m_dir;
+    };
+    
+    class Location {
+    public:
+        Location(int xx, int yy, GraphObject::Direction dir) : m_x(xx), m_y(yy), m_dir(dir) {}
+        int x() const { return m_x; }
+        int y() const { return m_y; }
+        GraphObject::Direction dir() const { return m_dir; }
+    private:
+        int m_x;
+        int m_y;
+        GraphObject::Direction m_dir;
+    };
 };
 
 #endif // STUDENTWORLD_H_

@@ -124,6 +124,7 @@ Dirt::Dirt(int startX, int startY, StudentWorld* studentWorld)
 Protester::Protester(int imageID, StudentWorld* studentWorld, int health)
 : LiveActor(imageID, 60, 60, studentWorld, health) {
     m_state = normal;
+    m_leaving = false;
     resetRestTicks();
     m_ticksSinceLastShout = 15;
     resetTurnTicks();
