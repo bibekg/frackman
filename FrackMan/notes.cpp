@@ -23,4 +23,4 @@
 
 // I can run through the protesters without getting annoyed since they rest for 3 ticks in the first level
 
-// I made a squirt go 4 spaces after its spawn for a "travel distance" of 4
+// I made a squirt go 4 spaces after its spawn for a "travel distance" of 40

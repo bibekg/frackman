@@ -51,7 +51,7 @@ int StudentWorld::init() {
                     m_exitMaze[x][y] = DISCOVERED;
                 }
                 
-                else if (x >= 60) {
+                else if (x > 60) {
                     m_exitMaze[x][y] = DISCOVERED;
                 } else {
                     m_exitMaze[x][y] = OPEN;
@@ -106,7 +106,8 @@ int StudentWorld::init() {
     m_barrelsLeft = barrels;
     
     // Construct/initialize one protester
-    m_actors.push_back(new Protester(60, 60, IID_PROTESTER, this));
+//    m_actors.push_back(new Protester(60, 60, IID_PROTESTER, this));
+    m_actors.push_back(new HardCoreProtester(60, 60, this));
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -379,6 +380,12 @@ void StudentWorld::getPlayerAction() {
             default:
                 break;
         }
+        for (int i = m_player->getX(); i < m_player->getX() + 4; i++) {
+            for (int j = m_player->getY(); j < m_player->getY() + 4; j++) {
+                markAsOpen(i, j);
+            }
+        }
+
     }
 }
 
@@ -904,11 +911,9 @@ void StudentWorld::frackManFoundItem(Pickup *pickup) {
     }
 }
 
-// ------------------------------------- //
-// ------------------------------------- //
-// --------- PRIVATE FUNCTIONS --------- //
-// ------------------------------------- //
-// ------------------------------------- //
+// ------------------------------------------------------- //
+// ------------------ PRIVATE FUNCTIONS ------------------ //
+// ------------------------------------------------------- //
 
 // -------------------------------- //
 // --------- HOUSEKEEPING --------- //
@@ -1095,3 +1100,6 @@ GraphObject::Direction StudentWorld::getProtesterDirectionTo(Protester* proteste
 
 }
 
+void StudentWorld::markAsOpen(int x, int y) {
+    m_exitMaze[x][y] = OPEN;
+}

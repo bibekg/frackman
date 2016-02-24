@@ -118,7 +118,7 @@ Dirt::Dirt(int startX, int startY, StudentWorld* studentWorld)
 }
 
 // ----------------------------- //
-// --------- Protester --------- //
+// --------- PROTESTER --------- //
 // ----------------------------- //
 
 Protester::Protester(int x, int y, int imageID, StudentWorld* studentWorld, int health)
@@ -205,8 +205,8 @@ void Protester::doSomething() {
             return;
         }
         
-        else if (isHardcore())
-            getWorld()->trackFrackMan(this);
+        else if (isHardcore() && getWorld()->trackFrackMan(this))
+            return;
         
         else if (getWorld()->stepTowardFrackMan(this))
             return;

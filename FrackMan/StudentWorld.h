@@ -88,6 +88,7 @@ private:
     bool isRadiusClear(int x, int y, int r);
     bool canPlaceWaterHere(int x, int y);
     int protesterCount();
+    void markAsOpen(int x, int y);
     
     // Private Member Variables
     FrackMan* m_player;
