@@ -179,11 +179,10 @@ private:
 class Protester: public LiveActor {
 public:
     
-    Protester(int imageID, StudentWorld* studentWorld, int health = 5);
+    Protester(int x, int y, int imageID, StudentWorld* studentWorld, int health = 5);
     
     virtual void doSomething();
     bool getAnnoyed(int amt);
-    void planExit();
     
     // Setters
     void setToRest() { m_state = resting; }
@@ -193,28 +192,18 @@ public:
     void resetNumSquaresToMove() { m_numSquaresToMoveInCurrDir = 0; }
     void reRandomizeMoveSquares();
     void getBribed();
+    void setTrackingRange(int range) { m_trackingRange = range; }
     
     // Getters
     int ticksSinceLastShout() { return m_ticksSinceLastShout; }
     int ticksSinceLastTurn() { return m_ticksSinceLastTurn; }
+    int trackingRange() { return m_trackingRange; }
     
     virtual bool isHardcore() { return false; }
     
 private:
     
     enum State { normal, resting, leaving, stunned };
-    
-    struct Coord {
-    public:
-        Coord(int xx, int yy) : m_x(xx), m_y(yy) {}
-        int x() const { return m_x; }
-        int y() const { return m_y; }
-    private:
-        int m_x;
-        int m_y;
-    };
-    
-    std::queue<Coord*> m_exitPath;
     
     // Member variables
     State m_state;
@@ -225,11 +214,13 @@ private:
     int m_ticksSinceLastShout;
     int m_ticksSinceLastTurn;
     int m_numSquaresToMoveInCurrDir;
+    int m_trackingRange;
+    
 };
 
 class HardCoreProtester: public Protester {
 public:
-    HardCoreProtester(StudentWorld* studentWorld);
+    HardCoreProtester(int x, int y, StudentWorld* studentWorld);
     
     virtual bool isHardcore() { return true; }
     

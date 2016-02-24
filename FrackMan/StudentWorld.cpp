@@ -106,7 +106,7 @@ int StudentWorld::init() {
     m_barrelsLeft = barrels;
     
     // Construct/initialize one protester
-    m_actors.push_back(new Protester(IID_PROTESTER, this));
+    m_actors.push_back(new Protester(60, 60, IID_PROTESTER, this));
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -143,10 +143,10 @@ int StudentWorld::move() {
         int whichToSpawn = randInt(1, 101);
         if (whichToSpawn <= probabilityOfHardcore)
             // Spawn hardcore
-            m_actors.push_back(new HardCoreProtester(this));
+            m_actors.push_back(new HardCoreProtester(60, 60, this));
         else
             // Spawn regular
-            m_actors.push_back(new Protester(IID_PROTESTER, this));
+            m_actors.push_back(new Protester(60, 60, IID_PROTESTER, this));
     } else
         m_ticksSinceProtesterSpawned++;
     
@@ -205,20 +205,7 @@ void StudentWorld::cleanUp() {
         it = m_actors.erase(it);
     }
     
-    // Testing: Print exit map
-    
-//    for (int y = 63; y >= 0; y--) {
-//        for (int x = 0; x < 64; x++) {
-//            if (m_exitMap[x][y] == -1) {
-//                cerr << "dob ";
-//            } else {
-//                cerr << string(3 - to_string(m_exitMap[x][y]).length(), '0') + to_string(m_exitMap[x][y]) + " ";
-//            }
-//            
-//        }
-//        cerr << endl;
-//    }
-    
+    // For testing purposes only: print exit maze
     for (int y = 63; y >= 0; y--) {
         for (int x = 0; x < 64; x++) {
             cerr << m_exitMaze[x][y];
@@ -392,11 +379,6 @@ void StudentWorld::getPlayerAction() {
             default:
                 break;
         }
-        for (int i = m_player->getX(); i < m_player->getX() + 4; i++) {
-            for (int j = m_player->getY(); j < m_player->getY() + 4; j++) {
-                markAsOpen(i, j);
-            }
-        }
     }
 }
 
@@ -434,8 +416,7 @@ void StudentWorld::protesterLeaveMap(Protester* protester) {
 
 //    int x = protester->getX(), y = protester->getY();
     
-    GraphObject::Direction dir = getProtesterDirectionToLeave(protester);
-    cout << dir << endl;
+    GraphObject::Direction dir = getProtesterDirectionTo(protester, 60, 60);
     
     if (protester->getDirection() != dir) {
         protester->setDirection(dir);
@@ -678,10 +659,33 @@ bool StudentWorld::takeAStep(Protester* protester) {
     return false;
 }
 
-bool StudentWorld::followFrackMan(Protester *protester) {
+bool StudentWorld::trackFrackMan(Protester *protester) {
     
-    // Implement maze search with FrackMan as end point
-    return true;
+    int stepsToFrackMan = 0;
+    
+    Protester p(protester->getX(), protester->getY(), IID_PROTESTER,  this);
+    p.setDirection(protester->getDirection());
+    
+    while (!(p.getX() == m_player->getX() && p.getY() == m_player->getY())) {
+        GraphObject::Direction dir = getProtesterDirectionTo(&p, m_player->getX(), m_player->getY());
+        if (p.getDirection() != dir) {
+            p.setDirection(dir);
+        } else {
+            takeAStep(&p);
+            stepsToFrackMan++;
+        }
+    }
+    
+    if (stepsToFrackMan <= protester->trackingRange()) {
+        GraphObject::Direction dir = getProtesterDirectionTo(protester, m_player->getX(), m_player->getY());
+        if (protester->getDirection() != dir) {
+            protester->setDirection(dir);
+        } else {
+            takeAStep(protester);
+        }
+        return true;
+    }
+    return false;
 }
 
 void StudentWorld::annoyFrackMan() {
@@ -736,19 +740,15 @@ bool StudentWorld::willBoulderCrash(Boulder* boulder) {
     int x = boulder->getX(), y = boulder->getY();
     
     // Will crash into boulder
-    for (int i = x - 3; i < x + 7; i++) {
-        for (int j = y - 4; j < y; j++) {
+    for (int i = x - 3; i < x + 7; i++)
+        for (int j = y - 4; j < y; j++)
             if (whatIsHere(i, j) == Actor::boulder)
                 return true;
-        }
-    }
     
     // Will crash into dirt
-    for (int i = 0; i < 4; i++) {
-        if (whatIsHere(x + i, y) == Actor::dirt) {
+    for (int i = 0; i < 4; i++)
+        if (whatIsHere(x + i, y) == Actor::dirt)
             return true;
-        }
-    }
     
     return false;
 }
@@ -776,7 +776,7 @@ bool StudentWorld::crushLiveActorBelow(Boulder* boulder) {
         actorCrushed = true;
     }
     
-    else {
+    else
         // Check if protesters will get crushed
         while (it != m_actors.end()) {
             if ((*it)->isAlive() && (*it)->canGetCrushed() && radius(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
@@ -787,7 +787,6 @@ bool StudentWorld::crushLiveActorBelow(Boulder* boulder) {
             
             it++;
         }
-    }
     
     return actorCrushed;
 }
@@ -1036,99 +1035,20 @@ int StudentWorld::protesterCount() {
     return count;
 }
 
-//void StudentWorld::getShortestRoute(int &x, int &y, GraphObject::Direction &dir) {
-//    
-//    int originalX = x, originalY = y;
-//    
-//    vector<Coord> options = {
-//        Coord(x, y+1, m_exitMap[x][y+1], GraphObject::up),
-//        Coord(x, y -1, m_exitMap[x][y-1], GraphObject::down),
-//        Coord(x+1, y, m_exitMap[x+1][y], GraphObject::right),
-//        Coord(x-1, y, m_exitMap[x-1][y], GraphObject::left)
-//    };
-//    
-//    do {
-//        x = originalX, y = originalY;
-//        vector<Coord>::iterator minIt = options.begin();
-//        Coord minCoord = options[0];                        // Smallest potential coordinate starts out as 0th element
-//        int i = 0;
-//        
-//        // For each option
-//        for(vector<Coord>::iterator it = options.begin(); it != options.end();i++) {
-//            
-//            // If that option has a lower potential than current min
-//            if ((*it).m_potential < minCoord.m_potential) {
-//                minCoord = (*it);   // Mark it as the min coordinate
-//                minIt = it;         // Mark that iterator as the minimum iterator (to erase)
-//            }
-//            
-//            it++;
-//        }
-//        
-//        // You now have a coordinate for which direction to attempt
-//        
-//        // Remove the just chosen option in case its path is blocked
-//        // Will need to re-select from vector of options
-//        options.erase(minIt);
-//        
-//        m_exitMaze[x][y] = DISCOVERED;
-//        
-//        // Update target coordinate based on minCoord
-//        dir = minCoord.m_dir;
-//        switch (minCoord.m_dir) {
-//            case GraphObject::up:
-//                
-//                for (int i = 0; i < 4; i++)
-//                    m_exitMaze[x + i][y] = DISCOVERED;
-//                if(pathExists(x, y + 1))
-//                    y = y + 1;
-//                for (int i = 0; i < 4; i++)
-//                    m_exitMaze[x + i][y] = OPEN;
-//                break;
-//                
-//            case GraphObject::down:
-//                for (int i = 0; i < 4; i++)
-//                    m_exitMaze[x + i][y] = DISCOVERED;
-//                if(pathExists(x, y - 1))
-//                    y = y - 1;
-//                for (int i = 0; i < 4; i++)
-//                    m_exitMaze[x + i][y] = OPEN;
-//                break;
-//                
-//            case GraphObject::left:
-//                for (int i = 0; i < 4; i++)
-//                    m_exitMaze[x][y] = DISCOVERED;
-//                if(pathExists(x, y+1))
-//                    y = y + 1;
-//                for (int i = 0; i < 4; i++)
-//                    m_exitMaze[x + i][y] = OPEN;
-//                break;
-//                
-//            case GraphObject::right:
-//                x = x + 1;
-//                break;
-//            default:
-//                break;
-//        }
-//    } while (isSpotBlocked(x, y) || (y == originalY && x == originalX));
-//}
-
-GraphObject::Direction StudentWorld::getProtesterDirectionToLeave(Protester* protester) {
+GraphObject::Direction StudentWorld::getProtesterDirectionTo(Protester* protester, int ex, int ey) {
     int endX = protester->getX(), endY = protester->getY();
     
     queue<Location> mapQueue;
     
     char maze[64][64];
     
-    for (int i = 0; i < 64; i++) {
-        for (int j = 0; j < 64; j++) {
+    // Re-make temporary maze for this tick (inefficient)
+    for (int i = 0; i < 64; i++)
+        for (int j = 0; j < 64; j++)
             maze[i][j] = m_exitMaze[i][j];
-        }
-    }
     
-    Location start(60, 60, GraphObject::none);
+    Location start(ex, ey, GraphObject::none);
     mapQueue.push(start);
-    GraphObject::Direction protDir = GraphObject::none;
     
     while (!mapQueue.empty()) {
         Location curr = mapQueue.front();
@@ -1141,32 +1061,30 @@ GraphObject::Direction StudentWorld::getProtesterDirectionToLeave(Protester* pro
             continue;
         
         if (currX == endX && currY == endY)
-            // Maze solved
             return curr.dir();
         
-        // Check north
+        // Check up
         const char up = maze[currX][currY+1];
         if (up == OPEN) {
             mapQueue.push(Location(currX, currY+1, GraphObject::down));
             maze[currX][currY+1] = DISCOVERED;
         }
         
-        // Check east
+        // Check right
         const char right = maze[currX+1][currY];
         if (right == OPEN) {
             mapQueue.push(Location(currX+1, currY, GraphObject::left));
             maze[currX+1][currY] = DISCOVERED;
-            protDir = GraphObject::left;
         }
         
-        // Check south
+        // Check down
         const char down = maze[currX][currY-1];
         if (down == OPEN) {
             mapQueue.push(Location(currX, currY-1, GraphObject::up));
             maze[currX][currY-1] = DISCOVERED;
         }
         
-        // Check west
+        // Check left
         const char left = maze[currX-1][currY];
         if (left == OPEN) {
             mapQueue.push(Location(currX-1, currY, GraphObject::right));
@@ -1177,60 +1095,3 @@ GraphObject::Direction StudentWorld::getProtesterDirectionToLeave(Protester* pro
 
 }
 
-//bool StudentWorld::pathExists(int sr, int sc) {
-//    
-//    int endX = 60, endY = 60;
-//    
-//    queue<Location> mapQueue;
-//    
-//    Location start(sr,sc);
-//    mapQueue.push(start);
-//    
-//    while (!mapQueue.empty()) {
-//        Location curr = mapQueue.front();
-//        mapQueue.pop();
-//        
-//        int currX = curr.x();
-//        int currY = curr.y();
-//        
-//        if (currX == endX && currY == endY) {
-//            // Maze solved
-//            return true;
-//        }
-//        
-//        // Check north
-//        const char up = m_exitMaze[currX][currY+1];
-//        if (up == OPEN) {
-//            mapQueue.push(Location(currX, currY+1));
-//            m_exitMaze[currX][currY+1] = DISCOVERED;
-//        }
-//        
-//        // Check east
-//        const char right = m_exitMaze[currX+1][currY];
-//        if (right == OPEN) {
-//            mapQueue.push(Location(currX+1, currY));
-//            m_exitMaze[currX+1][currY] = DISCOVERED;
-//        }
-//        
-//        // Check south
-//        const char down = m_exitMaze[currX][currY-1];
-//        if (down == OPEN) {
-//            mapQueue.push(Location(currX, currY-1));
-//            m_exitMaze[currX][currY-1] = DISCOVERED;
-//        }
-//        
-//        // Check west
-//        const char left = m_exitMaze[currX-1][currY];
-//        if (left == OPEN) {
-//            mapQueue.push(Location(currX-1, currY));
-//            m_exitMaze[currX-1][currY] = DISCOVERED;
-//        }
-//    }
-//    
-//    // No path found
-//    return false;
-//}
-
-void StudentWorld::markAsOpen(int x, int y) {
-    m_exitMaze[x][y] = OPEN;
-}

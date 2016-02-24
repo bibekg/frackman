@@ -121,8 +121,8 @@ Dirt::Dirt(int startX, int startY, StudentWorld* studentWorld)
 // --------- Protester --------- //
 // ----------------------------- //
 
-Protester::Protester(int imageID, StudentWorld* studentWorld, int health)
-: LiveActor(imageID, 60, 60, studentWorld, health) {
+Protester::Protester(int x, int y, int imageID, StudentWorld* studentWorld, int health)
+: LiveActor(imageID, x, y, studentWorld, health) {
     m_state = normal;
     m_leaving = false;
     resetRestTicks();
@@ -132,7 +132,6 @@ Protester::Protester(int imageID, StudentWorld* studentWorld, int health)
     m_defaultTicksToWait = max(0, 3 - int(studentWorld->getLevel())/4);
     m_stunnedTickstoWait = max(50, 100 - int(studentWorld->getLevel()) * 10);
     setName(protester);
-    
 }
 
 void Protester::reRandomizeMoveSquares() {
@@ -207,7 +206,7 @@ void Protester::doSomething() {
         }
         
         else if (isHardcore())
-            getWorld()->followFrackMan(this);
+            getWorld()->trackFrackMan(this);
         
         else if (getWorld()->stepTowardFrackMan(this))
             return;
@@ -245,9 +244,9 @@ bool Protester::getAnnoyed(int amt) {
     return false;
 }
 
-HardCoreProtester::HardCoreProtester(StudentWorld* studentWorld)
-: Protester(IID_HARD_CORE_PROTESTER, studentWorld, 20) {
-    
+HardCoreProtester::HardCoreProtester(int x, int y, StudentWorld* studentWorld)
+: Protester(x, y, IID_HARD_CORE_PROTESTER, studentWorld, 20) {
+    setTrackingRange(16 + int(studentWorld->getLevel()) * 2);
 }
 
 // --------------------------- //

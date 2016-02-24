@@ -45,7 +45,8 @@ public:
     GraphObject::Direction pickNewDirection(Protester* protester);
     bool movePerpendicularly(Protester* protester);
     bool takeAStep(Protester* protester);
-    bool followFrackMan(Protester* protester);
+    bool trackFrackMan(Protester* protester);
+    GraphObject::Direction getProtesterDirectionTo(Protester* protester, int ex, int ey);
     void annoyFrackMan();
     
     // Dirt functions
@@ -87,12 +88,6 @@ private:
     bool isRadiusClear(int x, int y, int r);
     bool canPlaceWaterHere(int x, int y);
     int protesterCount();
-//    void getShortestRoute(int &x, int &y, GraphObject::Direction &dir);
-//    bool pathExists(int sr, int sc);
-    void markAsOpen(int x, int y);
-    GraphObject::Direction getProtesterDirectionToLeave(Protester* protester);
-    
-    // Auxiliary Functions
     
     // Private Member Variables
     FrackMan* m_player;
@@ -104,17 +99,6 @@ private:
     int m_TICKSBETWEENSPAWNS;
     int m_ticksSinceProtesterSpawned;
     int m_maxProtesters;
-    
-    struct Coord {
-        
-        Coord(int x, int y, int ptl, GraphObject::Direction dir)
-        : m_x(x), m_y(y), m_potential(ptl), m_dir(dir) {}
-        
-        int m_x;
-        int m_y;
-        int m_potential;
-        GraphObject::Direction m_dir;
-    };
     
     class Location {
     public:
