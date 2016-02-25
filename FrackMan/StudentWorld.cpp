@@ -34,9 +34,6 @@ int StudentWorld::init() {
     
     int currentLevel = getLevel();
     
-    m_maxProtesters = min(15.0, 2 + int(currentLevel) * 1.5);
-    m_TICKSBETWEENSPAWNS = max(25, 200 - int(currentLevel));
-    
     // Construct/initialize FrackMan
     m_player = new FrackMan(this);
     
@@ -107,8 +104,12 @@ int StudentWorld::init() {
     m_barrelsLeft = barrels;
     
     // Construct/initialize one protester
-//    m_actors.push_back(new Protester(60, 60, IID_PROTESTER, this));
-    m_actors.push_back(new HardCoreProtester(60, 60, this));
+    m_actors.push_back(new Protester(60, 60, IID_PROTESTER, this));
+    
+    // Initialize various member variables
+    m_maxProtesters = min(15.0, 2 + int(currentLevel) * 1.5);
+    m_TICKSBETWEENSPAWNS = max(25, 200 - int(currentLevel));
+    m_ticksSinceProtesterSpawned = 0;
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -221,63 +222,13 @@ void StudentWorld::cleanUp() {
 // --------- GENERAL FUNCTIONS --------- //
 // ------------------------------------- //
 
-Actor::Name StudentWorld::whatIsBlockingPath(int x, int y, GraphObject::Direction dir) {
+bool StudentWorld::isFourByFourTaken(int x, int y) {
     
-    vector<Actor*>::iterator it = m_actors.begin();
-    
-    while (it != m_actors.end()) {
-        if ((*it)->getName() == Actor::boulder) {
-            switch (dir) {
-                case GraphObject::left:
-                    if (x == 0 )
-                        return Actor::wall;
-                    if (isBoulderHere(x - 1, y))
-                        return Actor::boulder;
-                    break;
-                case GraphObject::up:
-                    if (y == 60)
-                        return Actor::wall;
-                    if (isBoulderHere(x, y + 1))
-                        return Actor::boulder;
-                    break;
-                case GraphObject::right:
-                    if (x == 60)
-                        return Actor::wall;
-                    if(isBoulderHere(x + 1, y))
-                        return Actor::boulder;
-                    break;
-                case GraphObject::down:
-                    if (y == 0)
-                        return Actor::wall;
-                    if(isBoulderHere(x, y - 1))
-                        return Actor::boulder;
-                    break;
-                case GraphObject::none:
-                    break;
-            }
-        }
-        it++;
-    }
-    
-    // Obstacle in path not found
-    return Actor::nothing;
-}
-
-bool StudentWorld::isSpotBlocked(int x, int y) {
-    
-    if (x == -1 || x == 61 || y == -1 || y == 61) {
+    if (x == -1 || x == 61 || y == -1 || y == 61)
         return true;
-    }
     
-    for (int i = x; i < x + 4; i++) {
-        for (int j = y; j < y + 4; j++) {
-            if (isThereDirt(i, j)) {
-                return true;
-            }
-        }
-    }
     
-    if (isBoulderHere(x, y))
+    if (isThereDirt(x, y) || isThereBoulder(x, y))
         return true;
     
     return false;
@@ -287,16 +238,75 @@ bool StudentWorld::isSpotBlocked(int x, int y) {
 // --------- FRACKMAN --------- //
 // ---------------------------- //
 
+bool StudentWorld::isFrackManPathBlocked(int x, int y, GraphObject::Direction dir) {
+    
+    // Check for wall blocking FrackMan
+    bool wallBlocking = false;
+    switch (dir) {
+        case GraphObject::left:
+            if (x == 0 )
+                wallBlocking = true;
+            break;
+        case GraphObject::up:
+            if (y == 60)
+                wallBlocking = true;
+            break;
+        case GraphObject::right:
+            if (x == 60)
+                wallBlocking = true;
+            break;
+        case GraphObject::down:
+            if (y == 0)
+                wallBlocking = true;
+            break;
+        case GraphObject::none:
+            break;
+    }
+    if (wallBlocking) return true;
+    
+    // Check for boulder blocking FrackMan
+    bool boulderBlocking = false;
+    vector<Actor*>::iterator it = m_actors.begin();
+    while (it != m_actors.end()) {
+        if ((*it)->stopsFrackMan()) {
+            switch (dir) {
+                case GraphObject::up:
+                    if (isThereBoulder(x, y+1))
+                        return true;
+                    break;
+                case GraphObject::right:
+                    if (isThereBoulder(x+1, y))
+                        return true;
+                    break;
+                case GraphObject::down:
+                    if (isThereBoulder(x, y-1))
+                        return true;
+                    break;
+                case GraphObject::left:
+                    if (isThereBoulder(x-1, y))
+                        return true;
+                    break;
+                default:
+                    break;
+            }
+        }
+        it++;
+    }
+    if (boulderBlocking) return true;
+    
+    return false;
+}
+
 bool StudentWorld::destroyDirtUnderPlayer() {
     int playerX = m_player->getX(), playerY = m_player->getY();
     bool dug = false;
-    
-    for (int x = playerX; x < playerX + 4; x++)
-        for (int y = playerY; y < playerY + 4; y++)
-            if (isThereDirt(x, y)) {
+
+    if (isThereDirt(playerX, playerY)) {
+        dug = true;
+        for (int x = playerX; x < playerX + 4; x++)
+            for (int y = playerY; y < playerY + 4; y++)
                 destroyDirt(x, y);
-                dug = true;
-            }
+    }
     return dug;
 }
 
@@ -310,42 +320,39 @@ void StudentWorld::getPlayerAction() {
             case KEY_PRESS_LEFT:
                 if (dir != GraphObject::left)
                     m_player->setDirection(GraphObject::left);
-                else if (whatIsBlockingPath(pX, pY, dir) == Actor::nothing) {
-                    m_player->moveTo(pX - 1, pY);
-                }
-                else if (whatIsBlockingPath(pX, pY, dir) == Actor::wall)
+                else if (isFrackManPathBlocked(pX, pY, dir))
                     m_player->moveTo(pX, pY);
+                else
+                    m_player->moveTo(pX - 1, pY);
                 break;
             case KEY_PRESS_UP:
                 if (dir != GraphObject::up)
                     m_player->setDirection(GraphObject::up);
-                else if (whatIsBlockingPath(pX, pY, dir) == Actor::nothing) {
-                    m_player->moveTo(pX, pY + 1);
-                }
-                else if (whatIsBlockingPath(pX, pY, dir) == Actor::wall)
+                else if (isFrackManPathBlocked(pX, pY, dir))
                     m_player->moveTo(pX, pY);
+                else
+                    m_player->moveTo(pX, pY + 1);
                 break;
             case KEY_PRESS_RIGHT:
                 if (dir != GraphObject::right)
                     m_player->setDirection(GraphObject::right);
-                else if (whatIsBlockingPath(pX, pY, dir) == Actor::nothing) {
-                    m_player->moveTo(pX + 1, pY);
-                }
-                else if (whatIsBlockingPath(pX, pY, dir) == Actor::wall)
+                else if (isFrackManPathBlocked(pX, pY, dir))
                     m_player->moveTo(pX, pY);
+                else
+                    m_player->moveTo(pX + 1, pY);
                 break;
             case KEY_PRESS_DOWN:
                 if (dir != GraphObject::down)
                     m_player->setDirection(GraphObject::down);
-                else if (whatIsBlockingPath(pX, pY, dir) == Actor::nothing) {
-                    m_player->moveTo(pX, pY - 1);
-                }
-                else if (whatIsBlockingPath(pX, pY, dir) == Actor::wall)
+                else if (isFrackManPathBlocked(pX, pY, dir))
                     m_player->moveTo(pX, pY);
+                else
+                    m_player->moveTo(pX, pY - 1);
                 break;
             case KEY_PRESS_ESCAPE:
                 m_player->getAnnoyed(10);
                 m_player->setDead();
+                decLives();
                 break;
             case KEY_PRESS_SPACE:
                 if (m_player->squirts() > 0) {
@@ -382,6 +389,7 @@ void StudentWorld::dropGold(){
 void StudentWorld::useSonar() {
     if (m_player->sonars() > 0) {
         m_player->decSonars();
+        playSound(SOUND_SONAR);
         
         int x = m_player->getX();
         int y = m_player->getY();
@@ -450,7 +458,7 @@ bool StudentWorld::shoutIfPossible(Protester* protester) {
     return canShout;
 }
 
-GraphObject::Direction StudentWorld::directionToFrackMan(Protester *protester) {
+GraphObject::Direction StudentWorld::getLineDirToFrackMan(Protester *protester) {
     
     int x = protester->getX(), y = protester->getY();
     int pX = m_player->getX(), pY = m_player->getY();
@@ -481,7 +489,7 @@ GraphObject::Direction StudentWorld::directionToFrackMan(Protester *protester) {
         while (true) {
             if (pY == y)        // found FrackMan
                 return GraphObject::down;
-            if (isSpotBlocked(x, y - 1))    // path blocked
+            if (isFourByFourTaken(x, y - 1))    // path blocked
                 break;
             y--;
         }
@@ -491,7 +499,7 @@ GraphObject::Direction StudentWorld::directionToFrackMan(Protester *protester) {
         while (true) {
             if (pY == y)        // found FrackMan
                 return GraphObject::up;
-            if (isSpotBlocked(x, y + 1))    // path blocked
+            if (isFourByFourTaken(x, y + 1))    // path blocked
                 break;
             y++;
         }
@@ -501,7 +509,7 @@ GraphObject::Direction StudentWorld::directionToFrackMan(Protester *protester) {
         while (true) {
             if (pX == x)        // found FrackMan
                 return GraphObject::right;
-            if (isSpotBlocked(x + 1, y))    // path blocked
+            if (isFourByFourTaken(x + 1, y))    // path blocked
                 break;
             x++;
         }
@@ -511,7 +519,7 @@ GraphObject::Direction StudentWorld::directionToFrackMan(Protester *protester) {
         while (true) {
             if (pX == x)        // found FrackMan
                 return GraphObject::left;
-            if (isSpotBlocked(x - 1, y))    // path blocked
+            if (isFourByFourTaken(x - 1, y))    // path blocked
                 break;
             x--;
         }
@@ -523,7 +531,7 @@ GraphObject::Direction StudentWorld::directionToFrackMan(Protester *protester) {
 }
 
 bool StudentWorld::stepTowardFrackMan(Protester* protester) {
-    GraphObject::Direction dir = directionToFrackMan(protester);
+    GraphObject::Direction dir = getLineDirToFrackMan(protester);
     int x = protester->getX(), y = protester->getY();
     bool canStep = false;
     
@@ -563,19 +571,19 @@ GraphObject::Direction StudentWorld::pickNewDirection(Protester* protester) {
         int x = protester->getX(), y = protester->getY();
         switch (newDir) {
             case GraphObject::up:
-                if(!isSpotBlocked(x, y+1))
+                if(!isFourByFourTaken(x, y+1))
                     return newDir;
                 break;
             case GraphObject::right:
-                if(!isSpotBlocked(x+1, y))
+                if(!isFourByFourTaken(x+1, y))
                     return newDir;
                 break;
             case GraphObject::down:
-                if(!isSpotBlocked(x, y-1))
+                if(!isFourByFourTaken(x, y-1))
                     return newDir;
                 break;
             case GraphObject::left:
-                if(!isSpotBlocked(x-1, y))
+                if(!isFourByFourTaken(x-1, y))
                     return newDir;
                 break;
             case GraphObject::none:
@@ -594,12 +602,12 @@ bool StudentWorld::movePerpendicularly(Protester* protester) {
     switch (dir) {
         case GraphObject::up:
         case GraphObject::down:
-            if (!isSpotBlocked(x-1, y) || !isSpotBlocked(x+1, y))
+            if (!isFourByFourTaken(x-1, y) || !isFourByFourTaken(x+1, y))
                 canTurn = true;
             break;
         case GraphObject::right:
         case GraphObject::left:
-            if (!isSpotBlocked(x, y-1) || !(isSpotBlocked(x, y+1))) {
+            if (!isFourByFourTaken(x, y-1) || !(isFourByFourTaken(x, y+1))) {
                 canTurn = true;
                 currentlyVertical = false;
             }
@@ -636,28 +644,28 @@ bool StudentWorld::takeAStep(Protester* protester) {
     
     switch (dir) {
         case GraphObject::up:
-            if (!isSpotBlocked(x, y+1)) {
+            if (!isFourByFourTaken(x, y+1)) {
                 protester->moveTo(x, y+1);
                 // Mark exit map
                 return true;
             }
             break;
         case GraphObject::right:
-            if (!isSpotBlocked(x+1, y)) {
+            if (!isFourByFourTaken(x+1, y)) {
                 protester->moveTo(x+1, y);
                 // Mark exit map
                 return true;
             }
             break;
         case GraphObject::down:
-            if (!isSpotBlocked(x, y-1)) {
+            if (!isFourByFourTaken(x, y-1)) {
                 protester->moveTo(x, y-1);
                 // Mark exit map
                 return true;
             }
             break;
         case GraphObject::left:
-            if (!isSpotBlocked(x-1, y)) {
+            if (!isFourByFourTaken(x-1, y)) {
                 protester->moveTo(x-1, y);
                 // Mark exit map
                 return true;
@@ -669,35 +677,35 @@ bool StudentWorld::takeAStep(Protester* protester) {
     return false;
 }
 
-bool StudentWorld::trackFrackMan(Protester *protester) {
-    
-    int stepsToFrackMan = 0;
-    
-    Protester p(protester->getX(), protester->getY(), IID_PROTESTER,  this);
-    p.setDirection(protester->getDirection());
-    
-    while (!(p.getX() == m_player->getX() && p.getY() == m_player->getY())) {
-        GraphObject::Direction dir = getProtesterDirectionTo(&p, m_player->getX(), m_player->getY());
-        if (p.getDirection() != dir) {
-            p.setDirection(dir);
-        } else {
-            takeAStep(&p);
-            stepsToFrackMan++;
-        }
-    }
-    
-    if (stepsToFrackMan <= protester->trackingRange()) {
-        GraphObject::Direction dir = getProtesterDirectionTo(protester, m_player->getX(), m_player->getY());
-        if (protester->getDirection() != dir) {
-            protester->setDirection(dir);
-        } else {
-            takeAStep(protester);
-            protester->setToRest();
-        }
-        return true;
-    }
-    return false;
-}
+//bool StudentWorld::trackFrackMan(Protester *protester) {
+//    
+//    int stepsToFrackMan = 0;
+//    
+//    Protester p(protester->getX(), protester->getY(), IID_PROTESTER,  this);
+//    p.setDirection(protester->getDirection());
+//    
+//    while (!(p.getX() == m_player->getX() && p.getY() == m_player->getY())) {
+//        GraphObject::Direction dir = getProtesterDirectionTo(&p, m_player->getX(), m_player->getY());
+//        if (p.getDirection() != dir) {
+//            p.setDirection(dir);
+//        } else {
+//            takeAStep(&p);
+//            stepsToFrackMan++;
+//        }
+//    }
+//    
+//    if (stepsToFrackMan <= protester->trackingRange()) {
+//        GraphObject::Direction dir = getProtesterDirectionTo(protester, m_player->getX(), m_player->getY());
+//        if (protester->getDirection() != dir) {
+//            protester->setDirection(dir);
+//        } else {
+//            takeAStep(protester);
+//            protester->setToRest();
+//        }
+//        return true;
+//    }
+//    return false;
+//}
 
 void StudentWorld::annoyFrackMan() {
     m_player->getAnnoyed(2);
@@ -711,7 +719,15 @@ bool StudentWorld::isThereDirt(int x, int y) {
     
     if (y < 0 || y > 59 || x < 0 || x > 63) return false;
     
-    return m_dirt[x][y] != nullptr;
+    // Check 4x4 box for dirt
+    bool isThereDirt = false;
+    
+    for (int i = x; i < x + 4; i++)
+        for (int j = y; j < y + 4; j++)
+             if (m_dirt[i][j] != nullptr)
+                 isThereDirt = true;
+    
+    return isThereDirt;
 }
 
 void StudentWorld::destroyDirt(int x, int y) {
@@ -725,14 +741,12 @@ void StudentWorld::destroyDirt(int x, int y) {
 
 bool StudentWorld::willBoulderFall(Boulder *boulder) {
     int x = boulder->getX(), y = boulder->getY();
-    bool dirtBelow = false;
-    
-    // Check for dirt beneath boulder
-    for (int i = x; i < x + 4; i++) {
-        if (isThereDirt(i, y - 1))
-            dirtBelow = true;
-    }
-    return !dirtBelow;
+//    bool dirtBelow = false;
+//    
+//    // Check for dirt beneath boulder
+//    if (isThereDirt(x, y - 1))
+//        dirtBelow = true;
+    return !isThereDirt(x, y-1);
 }
 
 bool StudentWorld::dropBoulderOrTick(Boulder * boulder) {
@@ -750,19 +764,8 @@ bool StudentWorld::willBoulderCrash(Boulder* boulder) {
     
     int x = boulder->getX(), y = boulder->getY();
     
-//    // Will crash into boulder
-//    for (int i = x - 3; i < x + 7; i++)
-//        for (int j = y - 4; j < y; j++)
-////            if (whatIsHere(i, j) == Actor::boulder)
-//            if (
-//                return true;
-//    
-//    // Will crash into dirt
-//    for (int i = 0; i < 4; i++)
-//        if (whatIsHere(x + i, y) == Actor::dirt)
-//            return true;
+    // Check if an actor that breaks a boulder is underneath
     vector<Actor*>::iterator it = m_actors.begin();
-    
     while (it != m_actors.end()) {
         if ((*it)->breaksBoulder()) {
             for (int i = x - 3; i < x + 7; i++)
@@ -772,10 +775,9 @@ bool StudentWorld::willBoulderCrash(Boulder* boulder) {
         }
         it++;
     }
-    // Will crash into dirt
-    for (int i = 0; i < 4; i++)
-        if (isThereDirt(x + i, y))
-            return true;
+
+    if (isThereDirt(x, y))
+        return true;
     
     return false;
 }
@@ -846,19 +848,19 @@ void StudentWorld::spawnSquirt() {
     
     switch (m_player->getDirection()) {
         case Actor::up:
-            if (!isSpotBlocked(x, y + 4))
+            if (!isFourByFourTaken(x, y + 4))
                 m_actors.push_back(new Squirt(x, y + 4, m_player->getDirection(), this));
             break;
         case Actor::right:
-            if (!isSpotBlocked(x + 4, y))
+            if (!isFourByFourTaken(x + 4, y))
                 m_actors.push_back(new Squirt(x + 4, y, m_player->getDirection(), this));
             break;
         case Actor::down:
-            if (!isSpotBlocked(x, y - 4))
+            if (!isFourByFourTaken(x, y - 4))
                 m_actors.push_back(new Squirt(x, y - 4, m_player->getDirection(), this));
             break;
         case Actor::left:
-            if (!isSpotBlocked(x - 4, y))
+            if (!isFourByFourTaken(x - 4, y))
                 m_actors.push_back(new Squirt(x - 4, y, m_player->getDirection(), this));
             break;
         default:
@@ -871,14 +873,12 @@ void StudentWorld::spawnSquirt() {
 // ------------------------ //
 
 bool StudentWorld::getPickedUpByProtester(Gold* gold) {
-    vector<Actor*>::iterator it = m_actors.begin();
+    int goldX = gold->getX(), goldY = gold->getY();
     
+    vector<Actor*>::iterator it = m_actors.begin();
     while (it != m_actors.end()) {
-        if ((*it)->getName() == Actor::protester && radius(gold->getX(), gold->getY(), (*it)->getX(), (*it)->getY()) <= 3) {
-            Protester* a = dynamic_cast<Protester*>((*it));
-            if (a != nullptr)
-                a->getBribed();
-            return true;
+        if ((*it)->canPickUpGold() && radius(goldX, goldY, (*it)->getX(), (*it)->getY()) <= 3) {
+            (*it)->getBribed();
         }
         it++;
     }
@@ -907,28 +907,29 @@ bool StudentWorld::pickupPickupIfNearby(Pickup* pickup) {
 }
 
 void StudentWorld::frackManFoundItem(Pickup *pickup) {
-    switch (pickup->getName()) {
-        case Actor::barrel:
-            m_barrelsLeft--;
-            increaseScore(1000);
-            playSound(SOUND_FOUND_OIL);
-            break;
-        case Actor::gold:
-            m_player->incNuggets();
-            increaseScore(10);
-            playSound(SOUND_GOT_GOODIE);
-            break;
-        case Actor::sonarkit:
-            m_player->incSonars();
-            increaseScore(75);
-            playSound(SOUND_GOT_GOODIE);
-            break;
-        case Actor::waterpool:
-            m_player->refillSquirtGun();
-            break;
-        default:
-            break;
-    }
+    pickup->getPickedUp();
+}
+
+void StudentWorld::pickUpBarrel() {
+    m_barrelsLeft--;
+    increaseScore(1000);
+    playSound(SOUND_FOUND_OIL);
+}
+
+void StudentWorld::pickUpGold() {
+    m_player->incNuggets();
+    increaseScore(10);
+    playSound(SOUND_GOT_GOODIE);
+}
+
+void StudentWorld::pickUpSonarKit() {
+    m_player->incSonars();
+    increaseScore(75);
+    playSound(SOUND_GOT_GOODIE);
+}
+
+void StudentWorld::pickUpWater() {
+    m_player->refillSquirtGun();
 }
 
 // ------------------------------------------------------- //
@@ -948,9 +949,12 @@ void StudentWorld::setDisplayText() {
     int gold = m_player->nuggets();
     int sonar = m_player->sonars();
     int barrelsRemaining = barrelsLeft();
+    
     // Next, create a string from your statistics, of the form:
     // “Scr: 0321000 Lvl: 52 Lives: 3 Hlth: 80% Water: 20 Gld: 3 Sonar: 1 Oil Left: 2”
+    
     string s = formatDisplayText(score, level, lives, health, squirts, gold, sonar, barrelsRemaining);
+    
     // Finally, update the display text at the top of the screen with your // newly created stats
     setGameStatText(s); // calls our provided GameWorld::setGameStatText
 }
@@ -992,12 +996,12 @@ bool StudentWorld::isMineShaftRegion(int x, int y) {
     return false;
 }
 
-bool StudentWorld::isBoulderHere(int x, int y) {
+bool StudentWorld::isThereBoulder(int x, int y) {
     vector<Actor*>::iterator it = m_actors.begin();
     
     // For each boulder
     while (it != m_actors.end()) {
-        if ((*it)->getName() == Actor::boulder) {
+        if ((*it)->isBoulder()) {
             int bX = (*it)->getX();
             int bY = (*it)->getY();
             
@@ -1052,7 +1056,7 @@ int StudentWorld::protesterCount() {
     int count = 0;
     
     while (it != m_actors.end()) {
-        if (((*it)->getName() == Actor::protester || (*it)->getName() == Actor::hardcore) && (*it)->isAlive()) {
+        if ((*it)->canPickUpGold() && (*it)->isAlive()) {
             count++;
         }
         it++;
@@ -1082,7 +1086,7 @@ GraphObject::Direction StudentWorld::getProtesterDirectionTo(Protester* proteste
         int currX = curr.x();
         int currY = curr.y();
         
-        if (isSpotBlocked(currX, currY))
+        if (isFourByFourTaken(currX, currY))
             continue;
         
         if (currX == endX && currY == endY)

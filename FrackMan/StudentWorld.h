@@ -25,10 +25,8 @@ public:
     virtual void cleanUp();
     
     // General functions
-    Actor::Name whatIsBlockingPath(int x, int y, GraphObject::Direction dir);
-    bool 
-    
-    bool isSpotBlocked(int x, int y);
+    bool isFrackManPathBlocked(int x, int y, GraphObject::Direction);
+    bool isFourByFourTaken(int x, int y);
     
     // Frackman functions
     bool destroyDirtUnderPlayer();
@@ -39,14 +37,12 @@ public:
     // Protester functions
     void protesterLeaveMap(Protester* protester);
     bool shoutIfPossible(Protester* protester);
-    GraphObject::Direction directionToFrackMan(Protester* protester);
+    GraphObject::Direction getLineDirToFrackMan(Protester* protester);
     bool stepTowardFrackMan(Protester* protester);
     GraphObject::Direction pickNewDirection(Protester* protester);
     bool movePerpendicularly(Protester* protester);
     bool takeAStep(Protester* protester);
-    bool trackFrackMan(Protester* protester);
-    GraphObject::Direction getProtesterDirectionTo(Protester* protester, int ex, int ey);
-    void annoyFrackMan();
+    //    bool trackFrackMan(Protester* protester);
     
     // Dirt functions
     bool isThereDirt(int x, int y);
@@ -71,6 +67,11 @@ public:
     bool pickupPickupIfNearby(Pickup* pickup);
     void frackManFoundItem(Pickup* pickup);
     
+    void pickUpBarrel();
+    void pickUpGold();
+    void pickUpSonarKit();
+    void pickUpWater();
+    
 private:
     
     // Housekeeping Functions
@@ -82,18 +83,21 @@ private:
     
     // World awareness functions
     bool isMineShaftRegion(int x, int y);
-    bool isBoulderHere(int x, int y);
+    bool isThereBoulder(int x, int y);
     bool canPlacePickupHere(int x, int y);
     bool isRadiusClear(int x, int y, int r);
     bool canPlaceWaterHere(int x, int y);
     int protesterCount();
     void markAsOpen(int x, int y);
+    GraphObject::Direction getProtesterDirectionTo(Protester* protester, int ex, int ey);
+    void annoyFrackMan();
     
     // Private Member Variables
     FrackMan* m_player;
     Dirt* m_dirt[64][64];
-    char m_exitMaze[64][64];
     std::vector<Actor*> m_actors;
+    
+    char m_exitMaze[64][64];
     int m_barrelsLeft;
     int m_TICKSBETWEENSPAWNS;
     int m_ticksSinceProtesterSpawned;

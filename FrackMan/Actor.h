@@ -23,8 +23,6 @@ class StudentWorld;
 class Actor: public GraphObject {
 public:
     
-    enum Name { dirt, boulder, squirt, frackman, protester, hardcore, barrel, gold, sonarkit, waterpool, wall, nothing};
-    
     // Constructor/Destructor
     Actor(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir = right, double size = 0, unsigned int depth = 0);
     virtual ~Actor() {};
@@ -36,23 +34,24 @@ public:
     virtual bool sonarMakesVisible() { return false; }
     virtual bool canGetSquirted() { return false; }
     virtual bool breaksBoulder() { return false; }
+    virtual bool stopsFrackMan() { return false; }
+    virtual bool canPickUpGold() { return false; }
+    virtual bool isBoulder() { return false; }
     
     virtual void doSomething() = 0;
     virtual bool getAnnoyed(int amt) {return false; }
+    virtual void getBribed() {}
     
     // Getters
-    Name getName() { return m_name; }
     bool isAlive() { return m_alive; }
     
     // Setters
-    void setName(Name name) { m_name = name; }
     void setAlive() { m_alive = true; }
     void setDead() { m_alive = false; }
     
 private:
     StudentWorld* m_studentWorld;
     bool m_alive;
-    Name m_name;
 };
 
 class LiveActor: public Actor {
@@ -61,6 +60,7 @@ public:
     virtual ~LiveActor() {}
     
     virtual bool canGetCrushed() { return true; }
+    virtual bool canPickUpGold() { return true; }
     
     int health() { return m_health; }
     
@@ -78,6 +78,7 @@ public:
     
     virtual ~Pickup(){}
     
+    virtual void getPickedUp() = 0;
     void makePickupVisible(bool shouldDisplay);
     bool isPickupVisible() { return m_isVisible; }
     
@@ -90,6 +91,8 @@ private:
 class TemporaryPickup: public Pickup {
 public:
     TemporaryPickup(int imageID, int startX, int startY, StudentWorld* studentWorld, int timeLeft);
+    
+    virtual ~TemporaryPickup() {}
     
     void doSomething();
     void decrementTicks() { m_ticksRemaining--; }
@@ -122,6 +125,8 @@ public:
     
     // Identifiers
     virtual bool breaksBoulder() { return false; }
+    virtual bool stopsFrackMan() { return true; }
+    virtual bool isBoulder() { return false; }
     
     virtual void doSomething();
     
@@ -186,6 +191,7 @@ class Protester: public LiveActor {
 public:
     
     Protester(int x, int y, int imageID, StudentWorld* studentWorld, int health = 5);
+    virtual ~Protester() {}
     
     virtual void doSomething();
     bool getAnnoyed(int amt);
@@ -229,6 +235,7 @@ private:
 class HardCoreProtester: public Protester {
 public:
     HardCoreProtester(int x, int y, StudentWorld* studentWorld);
+    virtual ~HardCoreProtester() {}
     
     virtual bool isHardcore() { return true; }
     virtual void getBribed();
@@ -244,9 +251,10 @@ private:
 class Barrel: public Pickup {
 public:
     Barrel(int startX, int startY, StudentWorld* studentWorld);
+    virtual ~Barrel() {}
     
     virtual void doSomething();
-    
+    virtual void getPickedUp();
     virtual bool sonarMakesVisible() { return true; }
 };
 
@@ -257,10 +265,12 @@ public:
     enum TimeLimit {permanent, temporary};
     
     Gold(int startX, int startY, PickupableBy whoCanPickUp, TimeLimit timeLimit, StudentWorld* studentWorld);
+    virtual ~Gold() {}
     
     virtual void doSomething();
-    
+    virtual void getPickedUp();
     virtual bool sonarMakesVisible() { return true; }
+    
 private:
     PickupableBy m_whoCanPickUp;
     TimeLimit m_timeLimit;
@@ -270,13 +280,17 @@ private:
 class SonarKit: public TemporaryPickup {
 public:
     SonarKit(StudentWorld* studentWorld);
+    virtual ~SonarKit() {}
+    
+    virtual void getPickedUp();
 };
 
 class WaterPool: public TemporaryPickup {
 public:
     WaterPool(int startX, int startY, StudentWorld* studentWorld);
-
-private:
+    virtual ~WaterPool() {}
+    
+    virtual void getPickedUp();
 };
 
 #endif // ACTOR_H_
