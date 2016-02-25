@@ -10,10 +10,20 @@ GameWorld* createStudentWorld(string assetDir) {
 }
 
 StudentWorld::~StudentWorld() {
-    delete m_player;
-    for (int x = 0; x < 64; x++)
+    delete m_player;                    // Delete player
+    
+    for (int x = 0; x < 64; x++)        // Delete dirt
         for (int y = 0; y < 64; y++)
             delete m_dirt[x][y];
+    
+    vector<Actor*>::iterator it;
+    it = m_actors.begin();
+    
+    
+    while (it != m_actors.end()) {     // Delete all remaining objects
+        delete (*it);
+        it = m_actors.erase(it);
+    }
 }
 
 // --------------------------------------- //
@@ -29,15 +39,6 @@ int StudentWorld::init() {
     
     // Construct/initialize FrackMan
     m_player = new FrackMan(this);
-    
-    // Initialize exit map
-    for (int y = 60; y >= 0; y--)
-        for (int x = 63; x >= 0; x--)
-            m_exitMap[x][y] = (63-x) + (60-y);
-    
-    for (int y = 61; y < 64; y++)
-        for (int x = 0; x < 64; x++)
-            m_exitMap[x][y] = -1;
     
     // Construct/initialize dirt
     for (int x = 0; x < 64; x++) {
@@ -220,24 +221,6 @@ void StudentWorld::cleanUp() {
 // --------- GENERAL FUNCTIONS --------- //
 // ------------------------------------- //
 
-Actor::Name StudentWorld::whatIsHere(int x, int y) {
-    
-    if (m_player->getX() == x && m_player->getY() == y)
-        return Actor::frackman;
-    
-    vector<Actor*>::iterator it = m_actors.begin();
-    
-    while (it != m_actors.end()) {
-        if ((*it)->getX() == x && (*it)->getY() == y)
-            return (*it)->getName();
-        it++;
-    }
-    
-    if (m_dirt[x][y] != nullptr) return Actor::dirt;
-    
-    return Actor::nothing;
-}
-
 Actor::Name StudentWorld::whatIsBlockingPath(int x, int y, GraphObject::Direction dir) {
     
     vector<Actor*>::iterator it = m_actors.begin();
@@ -304,10 +287,10 @@ bool StudentWorld::isSpotBlocked(int x, int y) {
 // --------- FRACKMAN --------- //
 // ---------------------------- //
 
-bool StudentWorld::isPlayerOnDirt() {
-    int playerX = m_player->getX();
-    int playerY = m_player->getY();
+bool StudentWorld::destroyDirtUnderPlayer() {
+    int playerX = m_player->getX(), playerY = m_player->getY();
     bool dug = false;
+    
     for (int x = playerX; x < playerX + 4; x++)
         for (int y = playerY; y < playerY + 4; y++)
             if (isThereDirt(x, y)) {
@@ -458,9 +441,6 @@ bool StudentWorld::shoutIfPossible(Protester* protester) {
             break;
     }
     
-    if (protester->ticksSinceLastShout() <= 15)
-        canShout = false;
-    
     if (canShout) {
         playSound(SOUND_PROTESTER_YELL);
         m_player->getAnnoyed(2);
@@ -474,6 +454,28 @@ GraphObject::Direction StudentWorld::directionToFrackMan(Protester *protester) {
     
     int x = protester->getX(), y = protester->getY();
     int pX = m_player->getX(), pY = m_player->getY();
+    
+    switch (protester->getDirection()) {
+        case GraphObject::up:
+            if (pX == x && pY == y + 4)
+                return GraphObject::none;
+            break;
+        case GraphObject::right:
+            if (pX == x + 4 && pY == y)
+                return GraphObject::none;
+            break;
+        case GraphObject::left:
+            if (pX == x - 4 && pY == y)
+                return GraphObject::none;
+            break;
+        case GraphObject::down:
+            if (pX == x && pY == y - 4)
+                return GraphObject::none;
+            break;
+            
+        default:
+            break;
+    }
     
     if (pX == x && pY < y) {    // FrackMan is below
         while (true) {
@@ -528,6 +530,7 @@ bool StudentWorld::stepTowardFrackMan(Protester* protester) {
     // Can step toward FrackMan
     if (dir != GraphObject::none && radius(x, y, m_player->getX(), m_player->getY()) > 4) {
         canStep = true;
+        protester->resetNumSquaresToMove();
         protester->setDirection(dir);
         switch (dir) {
             case GraphObject::up:
@@ -689,6 +692,7 @@ bool StudentWorld::trackFrackMan(Protester *protester) {
             protester->setDirection(dir);
         } else {
             takeAStep(protester);
+            protester->setToRest();
         }
         return true;
     }
@@ -746,15 +750,31 @@ bool StudentWorld::willBoulderCrash(Boulder* boulder) {
     
     int x = boulder->getX(), y = boulder->getY();
     
-    // Will crash into boulder
-    for (int i = x - 3; i < x + 7; i++)
-        for (int j = y - 4; j < y; j++)
-            if (whatIsHere(i, j) == Actor::boulder)
-                return true;
+//    // Will crash into boulder
+//    for (int i = x - 3; i < x + 7; i++)
+//        for (int j = y - 4; j < y; j++)
+////            if (whatIsHere(i, j) == Actor::boulder)
+//            if (
+//                return true;
+//    
+//    // Will crash into dirt
+//    for (int i = 0; i < 4; i++)
+//        if (whatIsHere(x + i, y) == Actor::dirt)
+//            return true;
+    vector<Actor*>::iterator it = m_actors.begin();
     
+    while (it != m_actors.end()) {
+        if ((*it)->breaksBoulder()) {
+            for (int i = x - 3; i < x + 7; i++)
+                for (int j = y - 4; j < y; j++)
+                    if ((*it)->getX() == i && (*it)->getY() == j)
+                        return true;
+        }
+        it++;
+    }
     // Will crash into dirt
     for (int i = 0; i < 4; i++)
-        if (whatIsHere(x + i, y) == Actor::dirt)
+        if (isThereDirt(x + i, y))
             return true;
     
     return false;
@@ -809,7 +829,7 @@ bool StudentWorld::squirtProtesters(Squirt* squirt) {
     bool protesterAnnoyed = false;
     
     while (it != m_actors.end()) {
-        if ((*it) != nullptr && ((*it)->getName() == Actor::protester || (*it)->getName() == Actor::hardcore) && (*it)->isAlive() && radius(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
+        if ((*it) != nullptr && (*it)->canGetSquirted() && (*it)->isAlive() && radius(x, y, (*it)->getX(), (*it)->getY()) <= 3) {
             if((*it)->getAnnoyed(2))
                 increaseScore(100);
             protesterAnnoyed = true;

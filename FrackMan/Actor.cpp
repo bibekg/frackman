@@ -1,3 +1,4 @@
+
 #include <vector>
 
 #include <algorithm>
@@ -90,7 +91,7 @@ void FrackMan::doSomething() {
     StudentWorld* world = getWorld();
     
     // Check if overlapping dirt
-    if (world->isPlayerOnDirt())
+    if (world->destroyDirtUnderPlayer())
         world->playSound(SOUND_DIG);
     
     // Get user action
@@ -205,9 +206,10 @@ void Protester::doSomething() {
             return;
         }
         
-        else if (isHardcore() && getWorld()->trackFrackMan(this))
-            return;
-        
+        // Track FrackMan (not working)   :(
+//        else if (isHardcore() && getWorld()->trackFrackMan(this))
+//            return;
+        // If the FrackMan is in the line of sight, step toward him
         else if (getWorld()->stepTowardFrackMan(this))
             return;
         
@@ -247,6 +249,11 @@ bool Protester::getAnnoyed(int amt) {
 HardCoreProtester::HardCoreProtester(int x, int y, StudentWorld* studentWorld)
 : Protester(x, y, IID_HARD_CORE_PROTESTER, studentWorld, 20) {
     setTrackingRange(16 + int(studentWorld->getLevel()) * 2);
+}
+
+void HardCoreProtester::getBribed() {
+    setStunned();
+    resetRestTicks();
 }
 
 // --------------------------- //

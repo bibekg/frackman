@@ -8,7 +8,6 @@
 #include <vector>
 
 // Constants
-
 const int MAX_RADIUS = 6;
 const char DISCOVERED = 'X';
 const char OPEN = '.';
@@ -26,13 +25,13 @@ public:
     virtual void cleanUp();
     
     // General functions
-    Actor::Name whatIsHere(int x, int y);
     Actor::Name whatIsBlockingPath(int x, int y, GraphObject::Direction dir);
+    bool 
     
     bool isSpotBlocked(int x, int y);
     
     // Frackman functions
-    bool isPlayerOnDirt();
+    bool destroyDirtUnderPlayer();
     void getPlayerAction();
     void dropGold();
     void useSonar();
@@ -94,7 +93,6 @@ private:
     FrackMan* m_player;
     Dirt* m_dirt[64][64];
     char m_exitMaze[64][64];
-    int m_exitMap[64][64];
     std::vector<Actor*> m_actors;
     int m_barrelsLeft;
     int m_TICKSBETWEENSPAWNS;

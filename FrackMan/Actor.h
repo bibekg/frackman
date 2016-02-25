@@ -25,14 +25,17 @@ public:
     
     enum Name { dirt, boulder, squirt, frackman, protester, hardcore, barrel, gold, sonarkit, waterpool, wall, nothing};
     
-    // constructor
+    // Constructor/Destructor
     Actor(int imageID, int startX, int startY, StudentWorld* studentWorld, Direction dir = right, double size = 0, unsigned int depth = 0);
     virtual ~Actor() {};
     
     StudentWorld* getWorld();
     
+    // Identifiers
     virtual bool canGetCrushed() { return false; }
     virtual bool sonarMakesVisible() { return false; }
+    virtual bool canGetSquirted() { return false; }
+    virtual bool breaksBoulder() { return false; }
     
     virtual void doSomething() = 0;
     virtual bool getAnnoyed(int amt) {return false; }
@@ -117,6 +120,9 @@ public:
     
     virtual ~Boulder() {}
     
+    // Identifiers
+    virtual bool breaksBoulder() { return false; }
+    
     virtual void doSomething();
     
     int ticksWaited() {return m_ticksWaited; }
@@ -186,12 +192,12 @@ public:
     
     // Setters
     void setToRest() { m_state = resting; }
+    void setStunned() { m_state = stunned; }
     void resetShoutTicks() { m_ticksSinceLastShout = 0; }
     void resetTurnTicks() { m_ticksSinceLastTurn = 0; }
     void resetRestTicks() { m_ticksRested = 0; }
     void resetNumSquaresToMove() { m_numSquaresToMoveInCurrDir = 0; }
     void reRandomizeMoveSquares();
-    void getBribed();
     void setTrackingRange(int range) { m_trackingRange = range; }
     
     // Getters
@@ -200,6 +206,9 @@ public:
     int trackingRange() { return m_trackingRange; }
     
     virtual bool isHardcore() { return false; }
+    virtual bool canGetCrushed() { return true; }
+    virtual bool canGetSquirted() { return true; }
+    virtual void getBribed();
     
 private:
     
@@ -215,7 +224,6 @@ private:
     int m_ticksSinceLastTurn;
     int m_numSquaresToMoveInCurrDir;
     int m_trackingRange;
-    
 };
 
 class HardCoreProtester: public Protester {
@@ -223,6 +231,7 @@ public:
     HardCoreProtester(int x, int y, StudentWorld* studentWorld);
     
     virtual bool isHardcore() { return true; }
+    virtual void getBribed();
     
 private:
     
