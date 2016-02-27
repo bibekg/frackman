@@ -46,7 +46,6 @@ public:
     bool isAlive() { return m_alive; }
     
     // Setters
-    void setAlive() { m_alive = true; }
     void setDead() { m_alive = false; }
     
 private:
@@ -59,8 +58,8 @@ public:
     LiveActor(int imageID, int startX, int startY, StudentWorld* studentWorld, int health, Direction dir = left, double size = 1, unsigned int depth = 0);
     virtual ~LiveActor() {}
     
-    virtual bool canGetCrushed() { return true; }
-    virtual bool canPickUpGold() { return true; }
+    bool canGetCrushed() { return true; }
+    bool canPickUpGold() { return true; }
     
     int health() { return m_health; }
     
@@ -94,7 +93,7 @@ public:
     
     virtual ~TemporaryPickup() {}
     
-    void doSomething();
+    virtual void doSomething();
     void decrementTicks() { m_ticksRemaining--; }
     int ticksRemaining() { return m_ticksRemaining; }
 
@@ -126,7 +125,7 @@ public:
     // Identifiers
     virtual bool breaksBoulder() { return false; }
     virtual bool stopsFrackMan() { return true; }
-    virtual bool isBoulder() { return false; }
+    virtual bool isBoulder() { return true; }
     
     virtual void doSomething();
     
@@ -191,7 +190,7 @@ class Protester: public LiveActor {
 public:
     
     Protester(int x, int y, int imageID, StudentWorld* studentWorld, int health = 5);
-    virtual ~Protester() {}
+    virtual ~Protester();
     
     virtual void doSomething();
     bool getAnnoyed(int amt);

@@ -25,14 +25,14 @@ public:
     virtual void cleanUp();
     
     // General functions
-    bool isFrackManPathBlocked(int x, int y, GraphObject::Direction);
     bool isFourByFourTaken(int x, int y);
     
     // Frackman functions
+    bool isFrackManPathBlocked();
     bool destroyDirtUnderPlayer();
     void getPlayerAction();
-    void dropGold();
-    void useSonar();
+    bool dropGold();
+    bool useSonar();
     
     // Protester functions
     void protesterLeaveMap(Protester* protester);
@@ -42,6 +42,7 @@ public:
     GraphObject::Direction pickNewDirection(Protester* protester);
     bool movePerpendicularly(Protester* protester);
     bool takeAStep(Protester* protester);
+    void decProtesterCount() { m_protesterCount--; }
     //    bool trackFrackMan(Protester* protester);
     
     // Dirt functions
@@ -57,7 +58,8 @@ public:
     
     // Squirt functions
     bool squirtProtesters(Squirt* squirt);
-    void spawnSquirt();
+    bool moveSquirt(Squirt* squirt);
+    bool spawnSquirt();
     
     // Gold functions
     bool getPickedUpByProtester(Gold* gold);
@@ -87,8 +89,8 @@ private:
     bool canPlacePickupHere(int x, int y);
     bool isRadiusClear(int x, int y, int r);
     bool canPlaceWaterHere(int x, int y);
-    int protesterCount();
     void markAsOpen(int x, int y);
+    int protesterCount() { return m_protesterCount; }
     GraphObject::Direction getProtesterDirectionTo(Protester* protester, int ex, int ey);
     void annoyFrackMan();
     
@@ -99,6 +101,7 @@ private:
     
     char m_exitMaze[64][64];
     int m_barrelsLeft;
+    int m_protesterCount;
     int m_TICKSBETWEENSPAWNS;
     int m_ticksSinceProtesterSpawned;
     int m_maxProtesters;

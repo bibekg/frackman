@@ -49,7 +49,7 @@ Pickup::Pickup(int imageID, int startX, int startY, StudentWorld* studentWorld, 
 
 void Pickup::makePickupVisible(bool shouldDisplay) {
     m_isVisible = shouldDisplay;
-    setVisible(shouldDisplay);    // UNCOMMENT THIS TO HIDE PICKUPS
+    setVisible(shouldDisplay);
 }
 
 // ------------------------------------ //
@@ -130,6 +130,10 @@ Protester::Protester(int x, int y, int imageID, StudentWorld* studentWorld, int 
     reRandomizeMoveSquares();
     m_defaultTicksToWait = max(0, 3 - int(studentWorld->getLevel())/4);
     m_stunnedTickstoWait = max(50, 100 - int(studentWorld->getLevel()) * 10);
+}
+
+Protester::~Protester() {
+    getWorld()->decProtesterCount();
 }
 
 void Protester::reRandomizeMoveSquares() {
@@ -260,7 +264,6 @@ void HardCoreProtester::getBribed() {
 Boulder::Boulder(int startX, int startY, StudentWorld* studentWorld)
 : Actor(IID_BOULDER, startX, startY, studentWorld, down, 1.0, 1) {
     setState(stable);
-    setAlive();
     m_ticksWaited = 0;
     setVisible(true);
 }
@@ -321,36 +324,7 @@ void Squirt::doSomething() {
         setDead();
     else
         m_remainingDistance--;
-    
-    // Move squirt unless it will crash
-    switch (getDirection()) {
-        case GraphObject::up:
-            if (!world->isFourByFourTaken(getX(), getY() + 4))
-                moveTo(getX(), getY() + 1);
-            else
-                setDead();
-            break;
-        case GraphObject::right:
-            if (!world->isFourByFourTaken(getX() + 4, getY()))
-                moveTo(getX() + 1, getY());
-            else
-                setDead();
-            break;
-        case GraphObject::down:
-            if (!world->isFourByFourTaken(getX(), getY() - 1))
-                moveTo(getX(), getY() - 1);
-            else
-                setDead();
-            break;
-        case GraphObject::left:
-            if (!world->isFourByFourTaken(getX() - 1, getY()))
-                moveTo(getX() - 1, getY());
-            else
-                setDead();
-            break;
-        default:
-            break;
-    }
+    getWorld()->moveSquirt(this);
 }
 
 // -------------------------- //
