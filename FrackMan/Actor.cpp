@@ -49,7 +49,7 @@ Pickup::Pickup(int imageID, int startX, int startY, StudentWorld* studentWorld, 
 
 void Pickup::makePickupVisible(bool shouldDisplay) {
     m_isVisible = shouldDisplay;
-    setVisible(shouldDisplay);    // UNCOMMENT THIS TO HIDE PICKUPS
+    setVisible(shouldDisplay);
 }
 
 // ------------------------------------ //
@@ -83,7 +83,6 @@ FrackMan::FrackMan(StudentWorld* studentWorld)
     m_squirts = 5;
     m_sonars = 1;
     m_nuggets = 0;
-    setName(frackman);
 }
 
 void FrackMan::doSomething() {
@@ -115,7 +114,6 @@ bool FrackMan::getAnnoyed(int amt) {
 
 Dirt::Dirt(int startX, int startY, StudentWorld* studentWorld)
 : Actor(IID_DIRT, startX, startY, studentWorld, right, 0.25, 3) {
-    setName(dirt);
 }
 
 // ----------------------------- //
@@ -132,7 +130,10 @@ Protester::Protester(int x, int y, int imageID, StudentWorld* studentWorld, int 
     reRandomizeMoveSquares();
     m_defaultTicksToWait = max(0, 3 - int(studentWorld->getLevel())/4);
     m_stunnedTickstoWait = max(50, 100 - int(studentWorld->getLevel()) * 10);
-    setName(protester);
+}
+
+Protester::~Protester() {
+    getWorld()->decProtesterCount();
 }
 
 void Protester::reRandomizeMoveSquares() {
@@ -263,10 +264,8 @@ void HardCoreProtester::getBribed() {
 Boulder::Boulder(int startX, int startY, StudentWorld* studentWorld)
 : Actor(IID_BOULDER, startX, startY, studentWorld, down, 1.0, 1) {
     setState(stable);
-    setAlive();
     m_ticksWaited = 0;
     setVisible(true);
-    setName(boulder);
 }
 
 void Boulder::doSomething() {
@@ -310,7 +309,6 @@ bool Boulder::crashed() {
 Squirt::Squirt(int startX, int startY, Direction dir, StudentWorld* studentWorld)
 : Actor(IID_WATER_SPURT, startX, startY, studentWorld, dir, 1.0, 1) {
     m_remainingDistance = 4;
-    setName(squirt);
 }
 
 void Squirt::doSomething() {
@@ -326,36 +324,7 @@ void Squirt::doSomething() {
         setDead();
     else
         m_remainingDistance--;
-    
-    // Move squirt unless it will crash
-    switch (getDirection()) {
-        case GraphObject::up:
-            if (!world->isSpotBlocked(getX(), getY() + 4))
-                moveTo(getX(), getY() + 1);
-            else
-                setDead();
-            break;
-        case GraphObject::right:
-            if (!world->isSpotBlocked(getX() + 4, getY()))
-                moveTo(getX() + 1, getY());
-            else
-                setDead();
-            break;
-        case GraphObject::down:
-            if (!world->isSpotBlocked(getX(), getY() - 1))
-                moveTo(getX(), getY() - 1);
-            else
-                setDead();
-            break;
-        case GraphObject::left:
-            if (!world->isSpotBlocked(getX() - 1, getY()))
-                moveTo(getX() - 1, getY());
-            else
-                setDead();
-            break;
-        default:
-            break;
-    }
+    getWorld()->moveSquirt(this);
 }
 
 // -------------------------- //
@@ -364,7 +333,6 @@ void Squirt::doSomething() {
 
 Barrel::Barrel(int startX, int startY, StudentWorld* studentWorld)
 : Pickup(IID_BARREL, startX, startY, studentWorld, right, 1.0, 2) {
-    setName(barrel);
 }
 
 void Barrel::doSomething() {
@@ -379,6 +347,10 @@ void Barrel::doSomething() {
         world->frackManFoundItem(this);
 }
 
+void Barrel::getPickedUp() {
+    getWorld()->pickUpBarrel();
+}
+
 // ------------------------ //
 // --------- GOLD --------- //
 // ------------------------ //
@@ -388,7 +360,6 @@ Gold::Gold(int startX, int startY, PickupableBy whoCanPickUp, TimeLimit timeLimi
     m_whoCanPickUp = whoCanPickUp;
     m_timeLimit = timeLimit;
     ticksRemaining = 100;
-    setName(gold);
 }
 
 void Gold::doSomething() {
@@ -421,14 +392,21 @@ void Gold::doSomething() {
     
 }
 
+void Gold::getPickedUp() {
+    getWorld()->pickUpGold();
+}
+
 // ---------------------------- //
 // --------- SONARKIT --------- //
 // ---------------------------- //
 
 SonarKit::SonarKit(StudentWorld* studentWorld)
 : TemporaryPickup(IID_SONAR, 0, 60, studentWorld, max(100, 300 - 10 * int(studentWorld->getLevel()))) {
-    setName(sonarkit);
     setVisible(true);
+}
+
+void SonarKit::getPickedUp() {
+    getWorld()->pickUpSonarKit();
 }
 
 // ------------------------------ //
@@ -437,6 +415,9 @@ SonarKit::SonarKit(StudentWorld* studentWorld)
 
 WaterPool::WaterPool(int startX, int startY, StudentWorld* studentWorld)
 : TemporaryPickup(IID_WATER_POOL, startX, startY, studentWorld, min(100, 300 - 10 * int(studentWorld->getLevel()))) {
-    setName(waterpool);
     setVisible(true);
+}
+
+void WaterPool::getPickedUp() {
+    getWorld()->pickUpWater();
 }
